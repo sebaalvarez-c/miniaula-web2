@@ -240,10 +240,10 @@
     jsonc-parser "3.3.1"
     pluralize "8.0.0"
 
-"@nestjs/throttler@^5.1.2":
-  version "5.2.0"
-  resolved "https://registry.yarnpkg.com/@nestjs/throttler/-/throttler-5.2.0.tgz#9a70f1e13b3015977ed0fe740e23e3c5cba2d49a"
-  integrity sha512-G/G/MV3xf6sy1DwmnJsgeL+d2tQ/xGRNa9ZhZjm9Kyxp+3+ylGzwJtcnhWlN82PMEp3TiDQpTt+9waOIg/bpPg==
+"@nestjs/throttler@^6.8.0":
+  version "6.8.0"
+  resolved "https://registry.yarnpkg.com/@nestjs/throttler/-/throttler-6.8.0.tgz#38e6f49826f6b0fd959067e4b84df1e967da136c"
+  integrity sha512-kApHI/Ycxu3cxz7mcEhth7eeR9+L2GGb2CKpaBU+uAWz6DF4XRK68VWXFDKDA1aVwCdOf7HjYiafvQVG+eD2Gw==
 
 "@nestjs/typeorm@^10.0.1":
   version "10.0.2"
@@ -389,6 +389,13 @@
   version "9.0.5"
   resolved "https://registry.yarnpkg.com/@types/jsonwebtoken/-/jsonwebtoken-9.0.5.tgz#0bd9b841c9e6c5a937c17656e2368f65da025588"
   integrity sha512-VRLSGzik+Unrup6BsouBeHsf4d1hOEgYWTm/7Nmw1sXoN1+tRly/Gy/po3yeahnP4jfnQWWAhQAqcNfH7ngOkA==
+  dependencies:
+    "@types/node" "*"
+
+"@types/morgan@^1.9.10":
+  version "1.9.10"
+  resolved "https://registry.yarnpkg.com/@types/morgan/-/morgan-1.9.10.tgz#725c15d95a5e6150237524cd713bc2d68f9edf1a"
+  integrity sha512-sS4A1zheMvsADRVfT0lYbJ4S9lmsey8Zo2F7cnbYjWHP67Q0AwMYuuzLlkIM2N8gAbb9cubhIVFwcIN2XyYCkA==
   dependencies:
     "@types/node" "*"
 
@@ -794,6 +801,13 @@ baseline-browser-mapping@^2.11.33:
   version "2.11.35"
   resolved "https://registry.yarnpkg.com/baseline-browser-mapping/-/baseline-browser-mapping-2.11.35.tgz#3ca6f40d1c594ab494d8a21b05d5316528a41563"
   integrity sha512-GNk8KX52CHqeNKGk8+7tZnQab/2k1t/BgrUHPKNdijzpEhF1saPQZHVKb6m5loSAxB39gyrTYw34Qf9CQ3u1qQ==
+
+basic-auth@~2.0.1:
+  version "2.0.1"
+  resolved "https://registry.yarnpkg.com/basic-auth/-/basic-auth-2.0.1.tgz#b998279bf47ce38344b4f3cf916d4679bbf51e3a"
+  integrity sha512-NF+epuEdnUYVlGuhaxbbq+dvJttwLnGY+YixlXlME5KpQ5W3CnXA5cVTneY3SPbPDRkcjMbifrwmFYcClgOZeg==
+  dependencies:
+    safe-buffer "5.1.2"
 
 bcrypt@^5.1.1:
   version "5.1.1"
@@ -1737,10 +1751,10 @@ hasown@^2.0.2:
   dependencies:
     function-bind "^1.1.2"
 
-helmet@^7.1.0:
-  version "7.2.0"
-  resolved "https://registry.yarnpkg.com/helmet/-/helmet-7.2.0.tgz#8b2dcc425b4a46c88f6953481b40453cbe66b167"
-  integrity sha512-ZRiwvN089JfMXokizgqEPXsl2Guk094yExfoDXR0cBYWxtBbaSww/w+vT4WEJsBW2iTUi1GgZ6swmoug3Oy4Xw==
+helmet@^8.3.0:
+  version "8.3.0"
+  resolved "https://registry.yarnpkg.com/helmet/-/helmet-8.3.0.tgz#3842eea921e7c7015d11f217910c710c434efb26"
+  integrity sha512-Qgpiaws3Sm30Av8Eah6sjMCZZwjlBu+E68rhpCWBshY1lb09HtLwj5GviX0OyQIn+ulUS0iX0AxN5n3tLZzz1w==
 
 http-errors@~2.0.0, http-errors@~2.0.1:
   version "2.0.1"
@@ -2249,6 +2263,17 @@ mkdirp@^1.0.3:
   resolved "https://registry.yarnpkg.com/mkdirp/-/mkdirp-1.0.4.tgz#3eb5ed62622756d79a5f0e2a221dfebad75c2f7e"
   integrity sha512-vVqVZQyf3WLx2Shd0qJ9xuvqgAyKPLAiqITEtqW0oIUjzo3PePDd6fW9iFz30ef7Ysp/oiWqbhszeGWW2T6Gzw==
 
+morgan@^1.12.1:
+  version "1.12.1"
+  resolved "https://registry.yarnpkg.com/morgan/-/morgan-1.12.1.tgz#a6b29a9db7edf55256c560a1ae614c1c03619217"
+  integrity sha512-tljKC0ex20AjO58Ob/eZ53JloycbVswbVNCHx6V6VLGzqt/w8dIynVGL0G8qVjNKwiA7sYSogCrN6QtJ82IV+g==
+  dependencies:
+    basic-auth "~2.0.1"
+    debug "2.6.9"
+    depd "~2.0.0"
+    on-finished "~2.4.1"
+    on-headers "~1.1.0"
+
 ms@2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/ms/-/ms-2.0.0.tgz#5608aeadfc00be6c2901df5f9861788de0d597c8"
@@ -2359,6 +2384,11 @@ on-finished@~2.4.1:
   integrity sha512-ATWUv387i+nLD49EiDoOft5scf32Vsdz3ktrQJG9bi7jRFmaXTssvyvj1EmeKVVgvesbqUtvQQvaS2TpTukAZQ==
   dependencies:
     ee-first "1.1.1"
+
+on-headers@~1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/on-headers/-/on-headers-1.1.0.tgz#59da4f91c45f5f989c6e4bcedc5a3b0aed70ff65"
+  integrity sha512-737ZY3yNnXy37FHkQxPzt4UZ2UWPWiCZWLvFZ4fu5cueciegX0zGPnrlY6bwRg4FdQOe9YU8MkmJwGhoMybl8A==
 
 once@^1.3.0:
   version "1.4.0"
@@ -2711,6 +2741,11 @@ rxjs@^7.5.5, rxjs@^7.8.1:
   integrity sha512-dhKf903U/PQZY6boNNtAGdWbG85WAbjT/1xYoZIC7FAY0yWapOBQVsVrDl58W86//e1VpMNBtRV4MaXfdMySFA==
   dependencies:
     tslib "^2.1.0"
+
+safe-buffer@5.1.2:
+  version "5.1.2"
+  resolved "https://registry.yarnpkg.com/safe-buffer/-/safe-buffer-5.1.2.tgz#991ec69d296e0313747d59bdfd2b745c35f8828d"
+  integrity sha512-Gd2UZBJDkXlY7GbJxfsE8/nvKkUEU1G38c1siN6QP6a9PT9MmHB8GnpscSmMJSoF8LOIrt8ud/wPtojys4G6+g==
 
 safe-buffer@5.2.1, safe-buffer@^5.0.1, safe-buffer@^5.2.1, safe-buffer@~5.2.0:
   version "5.2.1"

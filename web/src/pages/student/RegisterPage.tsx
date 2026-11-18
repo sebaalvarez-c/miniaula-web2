@@ -1,59 +1,120 @@
-import { useForm } from 'react-hook-form';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth.js';
-import { ErrorMessage } from '../../components/ErrorMessage';
-import { useState } from 'react';
+import { useAuth } from '../../hooks/useAuth';
 
-export function RegisterPage() {
-  const { register: registerUser } = useAuth();
+export const RegisterPage: React.FC = () => {
+  const { register } = useAuth();
   const navigate = useNavigate();
-  const [apiError, setApiError] = useState('');
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<{ nombre: string; email: string; password: string; rol: string }>({ defaultValues: { nombre: '', email: '', password: '', rol: 'estudiante' } });
+  const [nombre, setNombre] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [rol, setRol] = useState<'student' | 'instructor'>('student');
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  const onSubmit = async (data) => {
-    setApiError('');
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSubmitting(true);
     try {
-      await registerUser(data);
-      navigate('/login');
-    } catch (e) {
-      setApiError(e.response?.data?.error?.message || 'Error al registrarse');
+      await register(nombre, email, password, rol);
+      navigate('/');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Error al registrar usuario');
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-sm">
-        <h1 className="text-2xl font-bold text-center mb-6">Crear cuenta</h1>
-        <form onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-xl border border-gray-200 p-6 flex flex-col gap-4">
-          {[
-            { name: 'nombre', label: 'Nombre', type: 'text', rules: { required: 'Requerido', minLength: { value: 2, message: 'Mínimo 2 caracteres' } } },
-            { name: 'email', label: 'Email', type: 'email', rules: { required: 'Requerido' } },
-            { name: 'password', label: 'Contraseña', type: 'password', rules: { required: 'Requerido', minLength: { value: 8, message: 'Mínimo 8 caracteres' } } },
-          ].map(({ name, label, type, rules }) => (
-            <div key={name}>
-              <label className="block text-sm font-medium mb-1">{label}</label>
-              <input type={type} {...register(name as 'nombre' | 'email' | 'password', rules)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              {errors[name] && <p className="text-red-500 text-xs mt-1">{errors[name].message}</p>}
-            </div>
-          ))}
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <div className="max-w-md w-full bg-white rounded-xl shadow-md p-8">
+        <h1 className="text-2xl font-bold text-gray-900 text-center mb-6">
+          Crear cuenta en MiniAula
+        </h1>
+
+        {error && (
+          <div className="mb-4 p-3 rounded-lg bg-red-50 text-red-700 text-sm">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1">Rol</label>
-            <select {...register('rol')} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value="estudiante">Estudiante</option>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Nombre completo
+            </label>
+            <input
+              type="text"
+              required
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Fabián"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Correo electrónico
+            </label>
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="tu@correo.com"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Contraseña
+            </label>
+            <input
+              type="password"
+              required
+              minLength={6}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Mínimo 6 caracteres"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Tipo de cuenta
+            </label>
+            <select
+              value={rol}
+              onChange={(e) => setRol(e.target.value as 'student' | 'instructor')}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="student">Estudiante</option>
               <option value="instructor">Instructor</option>
             </select>
           </div>
-          <ErrorMessage message={apiError} />
-          <button type="submit" disabled={isSubmitting}
-            className="bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
-            {isSubmitting ? 'Creando cuenta...' : 'Registrarse'}
+
+          <button
+            type="submit"
+            disabled={submitting}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition disabled:opacity-50"
+          >
+            {submitting ? 'Registrando...' : 'Registrarse'}
           </button>
-          <p className="text-center text-sm text-gray-500">
-            ¿Ya tenés cuenta? <Link to="/login" className="text-blue-600 hover:underline">Iniciá sesión</Link>
-          </p>
         </form>
+
+        <p className="mt-6 text-center text-sm text-gray-600">
+          ¿Ya tienes cuenta?{' '}
+          <Link to="/login" className="text-blue-600 hover:underline font-medium">
+            Inicia sesión
+          </Link>
+        </p>
       </div>
     </div>
   );
-}
+};
+
+export default RegisterPage;
