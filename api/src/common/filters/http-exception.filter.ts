@@ -5,14 +5,13 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
-import { Response, Request } from 'express';
+import { Response } from 'express';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
-    const request = ctx.getRequest<Request>();
 
     const status =
       exception instanceof HttpException
@@ -24,16 +23,28 @@ export class HttpExceptionFilter implements ExceptionFilter {
         ? exception.getResponse()
         : { message: 'Error interno del servidor' };
 
-    const message =
-      typeof exceptionResponse === 'string'
-        ? exceptionResponse
-        : (exceptionResponse as any).message || 'Error inesperado';
+    let message = 'Error inesperado';
+    let details: any[] = [];
+
+    if (typeof exceptionResponse === 'string') {
+      message = exceptionResponse;
+    } else if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
+      const resObj = exceptionResponse as any;
+      if (Array.isArray(resObj.message)) {
+        message = 'Error de validación';
+        details = resObj.message;
+      } else {
+        message = resObj.message || message;
+        details = Array.isArray(resObj.details) ? resObj.details : [];
+      }
+    }
 
     response.status(status).json({
-      statusCode: status,
-      timestamp: new Date().toISOString(),
-      path: request.url,
-      message,
+      error: {
+        code: status,
+        message,
+        details,
+      },
     });
   }
 }
