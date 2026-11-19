@@ -5,6 +5,8 @@ import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { CursosModule } from './cursos/cursos.module';
+import { LeccionesModule } from './lecciones/lecciones.module';
+import { CuestionariosModule } from './cuestionarios/cuestionarios.module';
 
 @Module({
   imports: [
@@ -13,14 +15,16 @@ import { CursosModule } from './cursos/cursos.module';
     }),
     ThrottlerModule.forRoot([
       {
-        ttl: 60000, // 1 minuto
-        limit: 10,  // máximo 10 peticiones por minuto
+        ttl: 60000,
+        limit: 10,
       },
     ]),
     DatabaseModule,
     AuthModule,
     UsersModule,
     CursosModule,
+    LeccionesModule,
+    CuestionariosModule,
   ],
 })
 export class AppModule {}
