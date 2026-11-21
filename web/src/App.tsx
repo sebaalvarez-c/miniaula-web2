@@ -17,6 +17,8 @@ import { InstructorMisCursosPage } from './pages/instructor/MisCursosPage';
 import { CourseEditorPage } from './pages/instructor/CourseEditorPage';
 import { LessonEditorPage } from './pages/instructor/LessonEditorPage';
 import { PanelPage } from './pages/instructor/PanelPage';
+import PanelPage from './pages/instructor/PanelPage';
+import MisCursosPage from './pages/instructor/MisCursosPage';
 
 function HomeRedirect() {
   const { user } = useAuth();
@@ -39,6 +41,11 @@ export default function App() {
 
         {/* Protected (any authenticated user) */}
         <Route path="/perfil" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+        // 3. Agrega estas dos rutas dentro de <Routes>:
+        <Route path="/instructor/panel" element={<RoleRoute role="instructor"><PanelPage /></RoleRoute>}/>
+        <Route path="/instructor/cursos"element={<RoleRoute role="instructor"><MisCursosPage /></RoleRoute>}/>
+        
+
 
         {/* Student only */}
         <Route path="/mis-cursos" element={<RoleRoute role="estudiante"><MyCursosPage /></RoleRoute>} />
@@ -53,8 +60,12 @@ export default function App() {
         <Route path="/instructor/panel" element={<RoleRoute role="instructor"><PanelPage /></RoleRoute>} />
         <Route path="/instructor/panel/:id" element={<RoleRoute role="instructor"><PanelPage /></RoleRoute>} />
 
+        
+
+        
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>
   );
 }
+
