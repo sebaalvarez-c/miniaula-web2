@@ -1,34 +1,24 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  ManyToOne,
-  JoinColumn,
-  CreateDateColumn,
-} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { Leccion } from '../../lecciones/entities/leccion.entity';
 
 @Entity('preguntas')
 export class Pregunta {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-  @Column({ type: 'text' })
+  @Column()
   enunciado: string;
 
-  @Column({ type: 'jsonb' })
+  @Column('simple-array')
   opciones: string[];
 
-  @Column({ name: 'respuesta_correcta', type: 'int' })
-  respuestaCorrecta: number;
+  @Column()
+  indiceCorrecto: number;
 
-  @Column({ name: 'leccion_id' })
-  leccionId: number;
+  @Column()
+  leccionId: string;
 
-  @ManyToOne(() => Leccion, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'leccion_id' })
+  @ManyToOne(() => Leccion, (l) => l.preguntas, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'leccionId' })
   leccion: Leccion;
-
-  @CreateDateColumn({ name: 'created_at' })
-  createdAt: Date;
 }
