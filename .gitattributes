@@ -1,3 +1,7 @@
 * text=auto eol=lf
 *.bat text eol=crlf
 *.cmd text eol=crlf
+
+# Collapse auto-generated lock files in GitHub diffs
+api/yarn.lock linguist-generated=true
+web/package-lock.json linguist-generated=true
