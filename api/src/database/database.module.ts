@@ -1,25 +1,13 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { User } from '../users/entities/user.entity';
+import { Curso } from '../cursos/entities/curso.entity';
+import { Leccion } from '../lecciones/entities/leccion.entity';
+import { Pregunta } from '../cuestionarios/entities/pregunta.entity';
 import { SeedService } from './seed.service';
 
 @Module({
-  imports: [
-    TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        host: configService.get<string>('DB_HOST', 'localhost'),
-        port: configService.get<number>('DB_PORT', 5432),
-        username: configService.get<string>('DB_USER', 'postgres'),
-        password: configService.get<string>('DB_PASSWORD', 'postgres'),
-        database: configService.get<string>('DB_NAME', 'miniaula'),
-        autoLoadEntities: true,
-        synchronize: true,
-      }),
-    }),
-  ],
+  imports: [TypeOrmModule.forFeature([User, Curso, Leccion, Pregunta])],
   providers: [SeedService],
   exports: [SeedService],
 })

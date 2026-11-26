@@ -1,75 +1,85 @@
-import React, { createContext, useState, useEffect, ReactNode } from 'react';
-import { authService, User } from '../services/auth.service';
+import { createContext, useState, useCallback, ReactNode } from 'react';
+import * as authService from '../services/auth.service.js';
+
+interface AuthUser {
+  id: string;
+  nombre: string;
+  email: string;
+  rol: string;
+}
 
 interface AuthContextType {
-  user: User | null;
+  user: AuthUser | null;
   token: string | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (
-    nombre: string,
-    email: string,
-    password: string,
-    rol?: 'student' | 'instructor',
-  ) => Promise<void>;
+  register: (nombre: string, email: string, password: string, rol: string) => Promise<void>;
   logout: () => void;
+  updateUser: (updated: Partial<AuthUser>) => void;
 }
 
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | null>(null);
 
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+function parseUser(): AuthUser | null {
+  try {
+    const raw = localStorage.getItem('user');
+    return raw ? (JSON.parse(raw) as AuthUser) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<AuthUser | null>(parseUser);
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'));
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const initAuth = async () => {
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-      try {
-        const profile = await authService.getProfile();
-        setUser(profile);
-      } catch {
-        localStorage.removeItem('token');
-        setToken(null);
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-    initAuth();
-  }, [token]);
+  const saveSession = useCallback((data: { access_token?: string; token?: string; user: AuthUser }) => {
+    const t = data.access_token ?? data.token ?? '';
+    localStorage.setItem('token', t);
+    localStorage.setItem('user', JSON.stringify(data.user));
+    setToken(t);
+    setUser(data.user);
+  }, []);
 
-  const login = async (email: string, password: string) => {
-    const res = await authService.login(email, password);
-    localStorage.setItem('token', res.access_token);
-    setToken(res.access_token);
-    setUser(res.user);
-  };
+  const login = useCallback(async (email: string, password: string) => {
+    setLoading(true);
+    try {
+      const data = await authService.login({ email, password });
+      saveSession(data);
+    } finally {
+      setLoading(false);
+    }
+  }, [saveSession]);
 
-  const register = async (
-    nombre: string,
-    email: string,
-    password: string,
-    rol: 'student' | 'instructor' = 'student',
-  ) => {
-    const res = await authService.register(nombre, email, password, rol);
-    localStorage.setItem('token', res.access_token);
-    setToken(res.access_token);
-    setUser(res.user);
-  };
+  const register = useCallback(async (nombre: string, email: string, password: string, rol: string) => {
+    setLoading(true);
+    try {
+      await authService.register({ nombre, email, password, rol });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     setToken(null);
     setUser(null);
-  };
+  }, []);
+
+  const updateUser = useCallback((updated: Partial<AuthUser>) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, ...updated };
+      localStorage.setItem('user', JSON.stringify(next));
+      return next;
+    });
+  }, []);
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, register, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );
-};
+}

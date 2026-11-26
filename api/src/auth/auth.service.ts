@@ -1,48 +1,41 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
-import { LoginDto } from './dto/login.dto';
+import { User } from '../users/entities/user.entity';
 import { RegisterDto } from './dto/register.dto';
+import { LoginDto } from './dto/login.dto';
+import { ApiException } from '../common/exceptions/api.exception';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly usersService: UsersService,
-    private readonly jwtService: JwtService,
+    private usersService: UsersService,
+    private jwtService: JwtService,
   ) {}
 
-  async register(registerDto: RegisterDto) {
-    const hashedPassword = await bcrypt.hash(registerDto.password, 10);
-    const user = await this.usersService.create({
-      ...registerDto,
-      password: hashedPassword,
-    });
+  async register(dto: RegisterDto) {
+    const existing = await this.usersService.findByEmail(dto.email);
+    if (existing) throw new ApiException(409, 'EMAIL_TAKEN', 'Email already registered');
 
-    const payload = { sub: user.id, email: user.email, rol: user.rol };
-    return {
-      access_token: this.jwtService.sign(payload),
-      user,
-    };
+    const passwordHash = await bcrypt.hash(dto.password, 10);
+    const user = await this.usersService.create({ ...dto, passwordHash });
+    const token = this.signToken(user);
+    return { token, user: this.usersService.toPublic(user) };
   }
 
-  async login(loginDto: LoginDto) {
-    const user = await this.usersService.findByEmailWithPassword(loginDto.email);
-    if (!user) {
-      throw new UnauthorizedException('Credenciales inválidas');
-    }
+  async login(dto: LoginDto) {
+    const user = await this.usersService.findByEmail(dto.email);
+    if (!user) throw new ApiException(401, 'INVALID_CREDENTIALS', 'Invalid email or password');
 
-    const isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
-    if (!isPasswordValid) {
-      throw new UnauthorizedException('Credenciales inválidas');
-    }
+    const valid = await bcrypt.compare(dto.password, user.passwordHash);
+    if (!valid) throw new ApiException(401, 'INVALID_CREDENTIALS', 'Invalid email or password');
 
-    const payload = { sub: user.id, email: user.email, rol: user.rol };
-    const { password, ...userWithoutPassword } = user;
+    const token = this.signToken(user);
+    return { token, user: this.usersService.toPublic(user) };
+  }
 
-    return {
-      access_token: this.jwtService.sign(payload),
-      user: userWithoutPassword,
-    };
+  private signToken(user: Pick<User, 'id' | 'email' | 'rol'>): string {
+    return this.jwtService.sign({ sub: user.id, email: user.email, rol: user.rol });
   }
 }

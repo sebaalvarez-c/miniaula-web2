@@ -1,40 +1,22 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-  UpdateDateColumn,
-} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, OneToMany } from 'typeorm';
 
-export enum UserRole {
-  STUDENT = 'student',
-  INSTRUCTOR = 'instructor',
-}
-
-@Entity('users')
+@Entity('usuarios')
 export class User {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-  @Column({ length: 120 })
+  @Column()
   nombre: string;
 
-  @Column({ unique: true, length: 150 })
+  @Column({ unique: true })
   email: string;
 
-  @Column({ select: false })
-  password: string;
+  @Column()
+  passwordHash: string;
 
-  @Column({
-    type: 'enum',
-    enum: UserRole,
-    default: UserRole.STUDENT,
-  })
-  rol: UserRole;
+  @Column({ default: 'estudiante' })
+  rol: string;
 
-  @CreateDateColumn({ name: 'created_at' })
-  createdAt: Date;
-
-  @UpdateDateColumn({ name: 'updated_at' })
-  updatedAt: Date;
+  @CreateDateColumn()
+  creadoEn: Date;
 }

@@ -1,11 +1,7 @@
-import { HttpException, HttpStatus } from '@nestjs/common';
+import { HttpException } from '@nestjs/common';
 
 export class ApiException extends HttpException {
-  constructor(
-    message: string,
-    status: HttpStatus = HttpStatus.BAD_REQUEST,
-    public readonly code?: string,
-  ) {
-    super({ message, code, statusCode: status }, status);
+  constructor(status: number, code: string, message: string, details: any = null) {
+    super({ code, message, details }, status);
   }
 }

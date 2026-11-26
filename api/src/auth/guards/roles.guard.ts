@@ -1,31 +1,24 @@
-import {
-  Injectable,
-  CanActivate,
-  ExecutionContext,
-  ForbiddenException,
-} from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from '../../common/decorators/roles.decorator';
+import { ApiException } from '../../common/exceptions/api.exception';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
-  constructor(private readonly reflector: Reflector) {}
+  constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const requiredRoles = this.reflector.getAllAndOverride<string[]>(ROLES_KEY, [
+    const required = this.reflector.getAllAndOverride<string[]>(ROLES_KEY, [
       context.getHandler(),
       context.getClass(),
     ]);
-
-    if (!requiredRoles || requiredRoles.length === 0) {
-      return true;
-    }
+    if (!required) return true;
 
     const { user } = context.switchToHttp().getRequest();
-    if (!user || !requiredRoles.includes(user.rol)) {
-      throw new ForbiddenException('No tienes permisos para acceder a este recurso');
+    if (!user) throw new ApiException(401, 'UNAUTHORIZED', 'Authentication required');
+    if (!required.includes(user.rol)) {
+      throw new ApiException(403, 'FORBIDDEN', 'Insufficient role');
     }
-
     return true;
   }
 }
