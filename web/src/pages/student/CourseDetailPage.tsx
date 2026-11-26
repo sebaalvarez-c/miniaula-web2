@@ -5,6 +5,8 @@ import { getMisInscripciones } from '../../services/inscripciones.service.js';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { ErrorMessage } from '../../components/ErrorMessage';
 import { useAuth } from '../../hooks/useAuth.js';
+import { getApiError } from '../../lib/api-error';
+import type { Curso, InscripcionItem } from '../../types';
 
 const CAT_GRADIENT = {
   'Programación': 'from-violet-500 via-purple-500 to-indigo-600',
@@ -14,10 +16,10 @@ const CAT_GRADIENT = {
 const CAT_ICON = { 'Programación': '💻', 'Diseño': '🎨', 'Idiomas': '🌍' };
 
 export function CourseDetailPage() {
-  const { id } = useParams();
+  const { id = '' } = useParams<{ id: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [curso, setCurso] = useState(null);
+  const [curso, setCurso] = useState<Curso | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [enrolling, setEnrolling] = useState(false);
@@ -25,10 +27,10 @@ export function CourseDetailPage() {
   const [inscripto, setInscripto] = useState(false);
 
   useEffect(() => {
-    getCursoDetalle(id).then(setCurso).catch((e) => setError(e.response?.data?.error?.message || 'Error')).finally(() => setLoading(false));
+    getCursoDetalle(id).then(setCurso).catch((e) => setError(getApiError(e))).finally(() => setLoading(false));
     if (user?.rol === 'estudiante') {
-      getMisInscripciones().then((ins) => {
-        setInscripto(ins.some((i: any) => i.cursoId === id));
+      getMisInscripciones().then((ins: InscripcionItem[]) => {
+        setInscripto(ins.some((i) => i.cursoId === id));
       }).catch(() => {});
     }
   }, [id, user]);
@@ -40,16 +42,18 @@ export function CourseDetailPage() {
       await inscribir(id);
       navigate(`/cursos/${id}/aprender`);
     } catch (e) {
-      if (e.response?.status === 409) navigate(`/cursos/${id}/aprender`);
-      else setEnrollError(e.response?.data?.error?.message || 'Error al inscribirse');
+      const err = e as { response?: { status?: number } };
+      if (err.response?.status === 409) navigate(`/cursos/${id}/aprender`);
+      else setEnrollError(getApiError(e, 'Error al inscribirse'));
     } finally { setEnrolling(false); }
   };
 
   if (loading) return <LoadingSpinner />;
   if (error) return <div className="max-w-2xl mx-auto px-4 py-8"><ErrorMessage message={error} /></div>;
+  if (!curso) return null;
 
-  const gradient = CAT_GRADIENT[curso.categoria] ?? 'from-brand-500 via-brand-600 to-purple-600';
-  const icon = CAT_ICON[curso.categoria] ?? '📚';
+  const gradient = CAT_GRADIENT[curso.categoria as keyof typeof CAT_GRADIENT] ?? 'from-brand-500 via-brand-600 to-purple-600';
+  const icon = CAT_ICON[curso.categoria as keyof typeof CAT_ICON] ?? '📚';
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8 animate-fade-in">

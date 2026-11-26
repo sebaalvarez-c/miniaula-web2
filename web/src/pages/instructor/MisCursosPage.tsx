@@ -4,8 +4,10 @@ import { getMisCursos, createCurso, deleteCurso, updateEstado } from '../../serv
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { EmptyState } from '../../components/EmptyState';
 import { ErrorMessage } from '../../components/ErrorMessage';
+import { getApiError } from '../../lib/api-error';
+import type { Curso } from '../../types';
 
-const ESTADO_BADGE = {
+const ESTADO_BADGE: Record<string, string> = {
   borrador: 'bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-gray-400',
   publicado: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
   archivado: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
@@ -13,14 +15,14 @@ const ESTADO_BADGE = {
 
 export function InstructorMisCursosPage() {
   const navigate = useNavigate();
-  const [cursos, setCursos] = useState([]);
+  const [cursos, setCursos] = useState<Curso[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [creating, setCreating] = useState(false);
 
   const load = () => {
     setLoading(true);
-    getMisCursos().then(setCursos).catch((e) => setError(e.response?.data?.error?.message || 'Error')).finally(() => setLoading(false));
+    getMisCursos().then(setCursos).catch((e) => setError(getApiError(e, 'Error'))).finally(() => setLoading(false));
   };
 
   useEffect(load, []);
@@ -31,19 +33,19 @@ export function InstructorMisCursosPage() {
       const c = await createCurso({ titulo: 'Nuevo curso', categoria: 'Programación', nivel: 'Básico' });
       navigate(`/instructor/cursos/${c.id}`);
     } catch (e) {
-      setError(e.response?.data?.error?.message || 'Error');
+      setError(getApiError(e, 'Error'));
     } finally { setCreating(false); }
   };
 
-  const handlePublish = async (id, estado) => {
+  const handlePublish = async (id: string, estado: string) => {
     try { await updateEstado(id, estado); load(); }
-    catch (e) { setError(e.response?.data?.error?.message || 'Error'); }
+    catch (e) { setError(getApiError(e, 'Error')); }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id: string) => {
     if (!confirm('¿Eliminar este curso?')) return;
     try { await deleteCurso(id); load(); }
-    catch (e) { setError(e.response?.data?.error?.message || 'Error'); }
+    catch (e) { setError(getApiError(e, 'Error')); }
   };
 
   if (loading) return <LoadingSpinner />;

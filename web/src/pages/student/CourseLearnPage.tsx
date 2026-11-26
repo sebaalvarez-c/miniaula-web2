@@ -5,7 +5,7 @@ import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { ErrorMessage } from '../../components/ErrorMessage';
 
 export function CourseLearnPage() {
-  const { cursoId } = useParams();
+  const { cursoId = '' } = useParams<{ cursoId: string }>();
   const navigate = useNavigate();
   const { data, loading, error } = useProgreso(cursoId);
 

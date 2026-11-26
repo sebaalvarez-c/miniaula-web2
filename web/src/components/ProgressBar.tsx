@@ -1,4 +1,4 @@
-export function ProgressBar({ value }) {
+export function ProgressBar({ value }: { value: number }) {
   const pct = Math.min(100, Math.max(0, value));
   const color = pct === 100 ? 'bg-emerald-500' : 'bg-accent';
 

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { getApiError } from '../../lib/api-error';
 
 export const RegisterPage: React.FC = () => {
   const { register } = useAuth();
@@ -19,8 +20,8 @@ export const RegisterPage: React.FC = () => {
     try {
       await register(nombre, email, password, rol);
       navigate('/');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Error al registrar usuario');
+    } catch (err: unknown) {
+      setError(getApiError(err, 'Error al registrar usuario'));
     } finally {
       setSubmitting(false);
     }

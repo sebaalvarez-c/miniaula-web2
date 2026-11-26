@@ -4,13 +4,30 @@ import { getMisCursos, getResumen } from '../../services/cursos.service.js';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { ErrorMessage } from '../../components/ErrorMessage';
 import { EmptyState } from '../../components/EmptyState';
+import { PageHeader } from '../../components/PageHeader';
+import { getApiError } from '../../lib/api-error';
+import type { Curso } from '../../types';
+
+interface ResumenLeccion {
+  id: string;
+  orden: number;
+  titulo: string;
+  estudiantesLlegaron: number;
+}
+
+interface ResumenData {
+  inscritos: number;
+  progresoPromedio: number;
+  notaPromedio: number | null;
+  lecciones: ResumenLeccion[];
+}
 
 export function PanelPage() {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [cursos, setCursos] = useState([]);
-  const [selected, setSelected] = useState(id || null);
-  const [resumen, setResumen] = useState(null);
+  const [cursos, setCursos] = useState<Curso[]>([]);
+  const [selected, setSelected] = useState<string>(id ?? '');
+  const [resumen, setResumen] = useState<ResumenData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -23,7 +40,7 @@ export function PanelPage() {
     setError(''); setResumen(null);
     getResumen(selected)
       .then(setResumen)
-      .catch((e) => setError(e.response?.data?.error?.message || 'Error'));
+      .catch((e) => setError(getApiError(e, 'Error')));
   }, [selected]);
 
   const maxReached = resumen ? Math.max(...resumen.lecciones.map((l) => l.estudiantesLlegaron), 1) : 1;
@@ -32,14 +49,11 @@ export function PanelPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
-      <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => navigate('/instructor/cursos')} className="text-muted hover:text-primary transition-colors">←</button>
-        <h1 className="text-xl font-bold text-primary">Panel</h1>
-      </div>
+      <PageHeader title="Panel" onBack={() => navigate('/instructor/cursos')} />
 
       <div className="mb-6">
         <label className="block text-sm font-medium text-primary mb-1">Seleccioná un curso</label>
-        <select value={selected || ''} onChange={(e) => setSelected(e.target.value)}
+        <select value={selected} onChange={(e) => setSelected(e.target.value)}
           className="bg-surface border border-theme rounded-lg px-3 py-2 text-sm text-primary focus:outline-none focus:ring-2 focus:ring-brand-400 transition-all">
           <option value="">-- Elegí un curso --</option>
           {cursos.map((c) => <option key={c.id} value={c.id}>{c.titulo}</option>)}
@@ -55,7 +69,7 @@ export function PanelPage() {
             {[
               { label: 'Inscritos', value: resumen.inscritos },
               { label: 'Progreso promedio', value: `${resumen.progresoPromedio}%` },
-              { label: 'Nota promedio', value: resumen.notaPromedio || '—' },
+              { label: 'Nota promedio', value: resumen.notaPromedio ?? '—' },
               { label: 'Completaron', value: '—' },
             ].map(({ label, value }) => (
               <div key={label} className="bg-card rounded-xl border border-theme p-4 text-center">

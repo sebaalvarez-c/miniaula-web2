@@ -3,6 +3,7 @@ import { useAuth } from '../../hooks/useAuth.js';
 import { updateMe } from '../../services/auth.service.js';
 import { ErrorMessage } from '../../components/ErrorMessage';
 import { useState } from 'react';
+import { getApiError } from '../../lib/api-error';
 
 export function ProfilePage() {
   const { user, updateUser } = useAuth();
@@ -10,14 +11,14 @@ export function ProfilePage() {
   const [saved, setSaved] = useState(false);
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<{ nombre: string; email: string }>({ defaultValues: { nombre: user?.nombre, email: user?.email } });
 
-  const onSubmit = async (data) => {
+  const onSubmit = async (data: { nombre: string; email: string }) => {
     setApiError(''); setSaved(false);
     try {
-      const updated = await updateMe(data);
+      const updated = await updateMe(data as Record<string, unknown>);
       updateUser(updated);
       setSaved(true);
     } catch (e) {
-      setApiError(e.response?.data?.error?.message || 'Error al actualizar');
+      setApiError(getApiError(e, 'Error al actualizar'));
     }
   };
 

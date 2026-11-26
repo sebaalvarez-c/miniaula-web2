@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { getApiError } from '../../lib/api-error';
 
 export const LoginPage: React.FC = () => {
   const { login } = useAuth();
@@ -17,8 +18,8 @@ export const LoginPage: React.FC = () => {
     try {
       await login(email, password);
       navigate('/');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Credenciales incorrectas');
+    } catch (err: unknown) {
+      setError(getApiError(err, 'Credenciales incorrectas'));
     } finally {
       setSubmitting(false);
     }

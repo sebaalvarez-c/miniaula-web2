@@ -5,23 +5,31 @@ import { getMisCursos, updateCurso, updateEstado } from '../../services/cursos.s
 import { createLeccion, deleteLeccion } from '../../services/lecciones.service.js';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { ErrorMessage } from '../../components/ErrorMessage';
+import { inputCls } from '../../lib/styles';
+import { getApiError } from '../../lib/api-error';
+import type { Curso } from '../../types';
+
+interface CourseFormData {
+  titulo: string;
+  descripcion: string;
+  categoria: string;
+  nivel: string;
+}
 
 const ESTADO_BADGE = 'text-xs bg-surface border border-theme text-muted px-2 py-0.5 rounded-full';
 
-const inputCls = 'w-full bg-surface border border-theme rounded-lg px-3 py-2 text-sm text-primary placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-brand-400 transition-all';
-
 export function CourseEditorPage() {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [curso, setCurso] = useState(null);
+  const [curso, setCurso] = useState<Curso | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [addingLesson, setAddingLesson] = useState(false);
-  const { register, handleSubmit, reset, formState: { isDirty } } = useForm();
+  const { register, handleSubmit, reset, formState: { isDirty } } = useForm<CourseFormData>();
 
   const load = async () => {
-    const cursos = await getMisCursos();
+    const cursos: Curso[] = await getMisCursos();
     const found = cursos.find((c) => c.id === id);
     if (!found) { navigate('/instructor/cursos'); return; }
     setCurso(found);
@@ -29,42 +37,46 @@ export function CourseEditorPage() {
       titulo: found.titulo === 'Nuevo curso' ? '' : found.titulo,
       descripcion: found.descripcion,
       categoria: found.categoria,
-      nivel: found.nivel,
+      nivel: (found as Curso & { nivel?: string }).nivel,
     });
     setLoading(false);
   };
 
   useEffect(() => { load(); }, [id]);
 
-  const onSave = async (data) => {
+  const onSave = async (data: CourseFormData) => {
+    if (!id) return;
     setSaving(true); setError('');
-    try { await updateCurso(id, data); await load(); }
-    catch (e) { setError(e.response?.data?.error?.message || 'Error'); }
+    try { await updateCurso(id, data as unknown as Record<string, unknown>); await load(); }
+    catch (e) { setError(getApiError(e, 'Error')); }
     finally { setSaving(false); }
   };
 
-  const handlePublish = async (estado) => {
+  const handlePublish = async (estado: string) => {
+    if (!id) return;
     setError('');
     try { await updateEstado(id, estado); await load(); }
-    catch (e) { setError(e.response?.data?.error?.message || 'Error'); }
+    catch (e) { setError(getApiError(e, 'Error')); }
   };
 
-  const handleAddLesson = async (tipo) => {
+  const handleAddLesson = async (tipo: string) => {
+    if (!id) return;
     setAddingLesson(true);
     try {
       await createLeccion(id, { titulo: tipo === 'cuestionario' ? 'Nuevo cuestionario' : 'Nueva lección', tipo, notaMinima: tipo === 'cuestionario' ? 70 : undefined });
       await load();
-    } catch (e) { setError(e.response?.data?.error?.message || 'Error'); }
+    } catch (e) { setError(getApiError(e, 'Error')); }
     finally { setAddingLesson(false); }
   };
 
-  const handleDeleteLesson = async (leccionId) => {
+  const handleDeleteLesson = async (leccionId: string) => {
     if (!confirm('¿Eliminar esta lección?')) return;
     try { await deleteLeccion(leccionId); await load(); }
-    catch (e) { setError(e.response?.data?.error?.message || 'Error'); }
+    catch (e) { setError(getApiError(e, 'Error')); }
   };
 
   if (loading) return <LoadingSpinner />;
+  if (!curso) return null;
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">

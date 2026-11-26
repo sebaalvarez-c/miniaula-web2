@@ -1,24 +1,48 @@
-import { createContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useState, useCallback, ReactNode } from 'react';
 import * as authService from '../services/auth.service.js';
 
-export const AuthContext = createContext(null);
+interface AuthUser {
+  id: string;
+  nombre: string;
+  email: string;
+  rol: string;
+}
 
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('user')); } catch { return null; }
-  });
-  const [token, setToken] = useState(() => localStorage.getItem('token'));
+interface AuthContextType {
+  user: AuthUser | null;
+  token: string | null;
+  loading: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  register: (nombre: string, email: string, password: string, rol: string) => Promise<void>;
+  logout: () => void;
+  updateUser: (updated: Partial<AuthUser>) => void;
+}
+
+export const AuthContext = createContext<AuthContextType | null>(null);
+
+function parseUser(): AuthUser | null {
+  try {
+    const raw = localStorage.getItem('user');
+    return raw ? (JSON.parse(raw) as AuthUser) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<AuthUser | null>(parseUser);
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'));
   const [loading, setLoading] = useState(false);
 
-  const saveSession = useCallback((data) => {
-    const t = data.access_token ?? data.token;
+  const saveSession = useCallback((data: { access_token?: string; token?: string; user: AuthUser }) => {
+    const t = data.access_token ?? data.token ?? '';
     localStorage.setItem('token', t);
     localStorage.setItem('user', JSON.stringify(data.user));
     setToken(t);
     setUser(data.user);
   }, []);
 
-  const login = useCallback(async (email, password) => {
+  const login = useCallback(async (email: string, password: string) => {
     setLoading(true);
     try {
       const data = await authService.login({ email, password });
@@ -28,10 +52,10 @@ export function AuthProvider({ children }) {
     }
   }, [saveSession]);
 
-  const register = useCallback(async (formData) => {
+  const register = useCallback(async (nombre: string, email: string, password: string, rol: string) => {
     setLoading(true);
     try {
-      await authService.register(formData);
+      await authService.register({ nombre, email, password, rol });
     } finally {
       setLoading(false);
     }
@@ -44,11 +68,14 @@ export function AuthProvider({ children }) {
     setUser(null);
   }, []);
 
-  const updateUser = useCallback((updated) => {
-    const next = { ...user, ...updated };
-    localStorage.setItem('user', JSON.stringify(next));
-    setUser(next);
-  }, [user]);
+  const updateUser = useCallback((updated: Partial<AuthUser>) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, ...updated };
+      localStorage.setItem('user', JSON.stringify(next));
+      return next;
+    });
+  }, []);
 
   return (
     <AuthContext.Provider value={{ user, token, loading, login, register, logout, updateUser }}>

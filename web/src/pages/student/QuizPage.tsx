@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getPreguntas, submitIntento } from '../../services/lecciones.service';
+import { getApiError } from '../../lib/api-error';
+import type { Pregunta, ResultadoIntento } from '../../types';
 
 export const QuizPage: React.FC = () => {
   const { cursoId, leccionId } = useParams<{ cursoId: string; leccionId: string }>();
   const navigate = useNavigate();
-  const [preguntas, setPreguntas] = useState<any[]>([]);
+  const [preguntas, setPreguntas] = useState<Pregunta[]>([]);
   const [seleccionadas, setSeleccionadas] = useState<Record<string, number>>({});
-  const [resultado, setResultado] = useState<any>(null);
+  const [resultado, setResultado] = useState<ResultadoIntento | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -16,7 +18,7 @@ export const QuizPage: React.FC = () => {
     if (!leccionId) return;
     getPreguntas(leccionId)
       .then(setPreguntas)
-      .catch((err: any) => setError(err.response?.data?.error?.message || 'Error al cargar preguntas'))
+      .catch((err: unknown) => setError(getApiError(err, 'Error al cargar preguntas')))
       .finally(() => setLoading(false));
   }, [leccionId]);
 
@@ -35,10 +37,10 @@ export const QuizPage: React.FC = () => {
     }
     setError(''); setSubmitting(true);
     try {
-      const res = await submitIntento(leccionId, respuestas as number[]);
+      const res: ResultadoIntento = await submitIntento(leccionId, respuestas as number[]);
       setResultado(res);
-    } catch (err: any) {
-      setError(err.response?.data?.error?.message || 'Error al enviar el cuestionario');
+    } catch (err: unknown) {
+      setError(getApiError(err, 'Error al enviar el cuestionario'));
     } finally { setSubmitting(false); }
   };
 

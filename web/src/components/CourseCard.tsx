@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import type { Curso } from '../types';
 
 const CATEGORY_CONFIG = {
   'Programación': {
@@ -30,9 +31,9 @@ const LEVEL_CONFIG = {
   'Avanzado':   'bg-red-100     text-red-700     dark:bg-red-900/30     dark:text-red-300',
 };
 
-export function CourseCard({ curso }) {
-  const config = CATEGORY_CONFIG[curso.categoria] ?? DEFAULT_CONFIG;
-  const levelStyle = LEVEL_CONFIG[curso.nivel] ?? 'bg-stone-100 text-stone-600 dark:bg-white/10 dark:text-stone-300';
+export function CourseCard({ curso }: { curso: Curso & { nivel?: string } }) {
+  const config = CATEGORY_CONFIG[curso.categoria as keyof typeof CATEGORY_CONFIG] ?? DEFAULT_CONFIG;
+  const levelStyle = LEVEL_CONFIG[curso.nivel as keyof typeof LEVEL_CONFIG] ?? 'bg-stone-100 text-stone-600 dark:bg-white/10 dark:text-stone-300';
 
   return (
     <div className="bg-card rounded-2xl overflow-hidden card-hover border border-theme flex flex-col group shadow-card dark:shadow-card-dark">

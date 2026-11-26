@@ -2,12 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { getLeccion, completarLeccion } from '../../services/lecciones.service';
 import { getProgresoCurso } from '../../services/cursos.service';
+import { getApiError } from '../../lib/api-error';
+import type { Leccion, ProgresoData, ProgresoLeccionItem } from '../../types';
 
 export const LessonPage: React.FC = () => {
   const { cursoId, leccionId } = useParams<{ cursoId: string; leccionId: string }>();
   const navigate = useNavigate();
-  const [leccion, setLeccion] = useState<any>(null);
-  const [progreso, setProgreso] = useState<any>(null);
+  const [leccion, setLeccion] = useState<Leccion | null>(null);
+  const [progreso, setProgreso] = useState<ProgresoData | null>(null);
   const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState(false);
   const [completed, setCompleted] = useState(false);
@@ -18,13 +20,14 @@ export const LessonPage: React.FC = () => {
     setLoading(true); setError('');
     Promise.all([getLeccion(leccionId), getProgresoCurso(cursoId)])
       .then(([d, p]) => {
-        setLeccion(d.leccion ?? d);
+        const lec: Leccion = d.leccion ?? d;
+        setLeccion(lec);
         setProgreso(p);
-        if ((d.leccion ?? d).tipo === 'cuestionario') {
+        if (lec.tipo === 'cuestionario') {
           navigate(`/cursos/${cursoId}/lecciones/${leccionId}/quiz`, { replace: true });
         }
       })
-      .catch((err: any) => setError(err.response?.data?.error?.message || 'Lección no disponible'))
+      .catch((err: unknown) => setError(getApiError(err, 'Lección no disponible')))
       .finally(() => setLoading(false));
   }, [leccionId, cursoId]);
 
@@ -33,14 +36,14 @@ export const LessonPage: React.FC = () => {
     setCompleting(true);
     try {
       await completarLeccion(leccionId);
-      const p = await getProgresoCurso(cursoId);
+      const p: ProgresoData = await getProgresoCurso(cursoId);
       setProgreso(p);
-      const idx = p.lecciones.findIndex((l: any) => l.leccionId === leccionId);
+      const idx = p.lecciones.findIndex((l: ProgresoLeccionItem) => l.leccionId === leccionId);
       const next = p.lecciones[idx + 1];
       if (next) navigate(`/cursos/${cursoId}/lecciones/${next.leccionId}`);
       else setCompleted(true);
-    } catch (err: any) {
-      setError(err.response?.data?.error?.message || 'Error al completar');
+    } catch (err: unknown) {
+      setError(getApiError(err, 'Error al completar'));
     } finally { setCompleting(false); }
   };
 
@@ -98,7 +101,7 @@ export const LessonPage: React.FC = () => {
               </div>
             </div>
             <div className="flex flex-col gap-0.5 mt-3">
-              {progreso.lecciones.map((l: any, i: number) => {
+              {progreso.lecciones.map((l: ProgresoLeccionItem, i: number) => {
                 const isActive = l.leccionId === leccionId;
                 const isLocked = !l.completada && i > 0 && !progreso.lecciones[i - 1].completada;
                 return (

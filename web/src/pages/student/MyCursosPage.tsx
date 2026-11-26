@@ -5,23 +5,25 @@ import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { EmptyState } from '../../components/EmptyState';
 import { ErrorMessage } from '../../components/ErrorMessage';
 import { ProgressBar } from '../../components/ProgressBar';
+import { getApiError } from '../../lib/api-error';
+import type { InscripcionDetalle } from '../../types';
 
-const CAT_ICONS = { 'Programación': '💻', 'Diseño': '🎨', 'Idiomas': '🌍' };
-const CAT_COLORS = {
+const CAT_ICONS: Record<string, string> = { 'Programación': '💻', 'Diseño': '🎨', 'Idiomas': '🌍' };
+const CAT_COLORS: Record<string, string> = {
   'Programación': 'from-violet-500 to-indigo-600',
   'Diseño': 'from-pink-500 to-rose-500',
   'Idiomas': 'from-cyan-500 to-teal-500',
 };
 
 export function MyCursosPage() {
-  const [inscripciones, setInscripciones] = useState([]);
+  const [inscripciones, setInscripciones] = useState<InscripcionDetalle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
     getMisInscripciones()
       .then(setInscripciones)
-      .catch((e) => setError(e.response?.data?.error?.message || 'Error'))
+      .catch((e) => setError(getApiError(e, 'Error')))
       .finally(() => setLoading(false));
   }, []);
 

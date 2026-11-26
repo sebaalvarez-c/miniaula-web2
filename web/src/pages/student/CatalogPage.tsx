@@ -4,6 +4,7 @@ import { CourseCard } from '../../components/CourseCard';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { EmptyState } from '../../components/EmptyState';
 import { ErrorMessage } from '../../components/ErrorMessage';
+import type { Curso } from '../../types';
 
 const CATEGORIAS = [
   { label: 'Todas',        icon: '✦' },
@@ -21,7 +22,7 @@ function SearchIcon() {
 }
 
 export function CatalogPage() {
-  const [cursos, setCursos] = useState([]);
+  const [cursos, setCursos] = useState<Curso[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

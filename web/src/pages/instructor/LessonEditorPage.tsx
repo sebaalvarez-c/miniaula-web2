@@ -5,22 +5,37 @@ import { getLeccion, updateLeccion } from '../../services/lecciones.service.js';
 import { createPregunta } from '../../services/preguntas.service.js';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { ErrorMessage } from '../../components/ErrorMessage';
+import { PageHeader } from '../../components/PageHeader';
+import { inputCls } from '../../lib/styles';
+import { getApiError } from '../../lib/api-error';
+import type { Curso, Leccion } from '../../types';
 
-const inputCls = 'w-full bg-surface border border-theme rounded-lg px-3 py-2 text-sm text-primary placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-brand-400 transition-all';
+interface LessonFormData {
+  titulo: string;
+  tipo: string;
+  contenido: string;
+  videoUrl: string;
+  notaMinima: number;
+}
+
+interface EditorData {
+  leccion: Leccion;
+  cursoId: string;
+}
 
 export function LessonEditorPage() {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [data, setData] = useState(null);
+  const [data, setData] = useState<EditorData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
-  const { register, handleSubmit, reset, watch } = useForm();
+  const { register, handleSubmit, reset, watch } = useForm<LessonFormData>();
   const tipo = watch('tipo');
 
   useEffect(() => {
     setLoading(true);
-    import('../../services/cursos.service.js').then(({ getMisCursos }) => getMisCursos()).then((cursos) => {
+    import('../../services/cursos.service.js').then(({ getMisCursos }) => getMisCursos()).then((cursos: Curso[]) => {
       for (const c of cursos) {
         const found = c.lecciones?.find((l) => l.id === id);
         if (found) {
@@ -33,37 +48,38 @@ export function LessonEditorPage() {
     }).catch(() => setError('Error al cargar')).finally(() => setLoading(false));
   }, [id]);
 
-  const onSave = async (formData) => {
+  const onSave = async (formData: LessonFormData) => {
+    if (!id) return;
     setSaving(true); setError('');
-    try { await updateLeccion(id, formData); }
-    catch (e) { setError(e.response?.data?.error?.message || 'Error'); }
+    try { await updateLeccion(id, formData as unknown as Record<string, unknown>); }
+    catch (e) { setError(getApiError(e, 'Error')); }
     finally { setSaving(false); }
   };
 
   const handleAddQuestion = async () => {
+    if (!id) return;
     const enunciado = prompt('Enunciado de la pregunta:');
     if (!enunciado) return;
     const optsRaw = prompt('Opciones separadas por | (ej: Opción A|Opción B|Opción C)');
     if (!optsRaw) return;
     const opciones = optsRaw.split('|').map((s) => s.trim()).filter(Boolean);
     if (opciones.length < 2) { alert('Mínimo 2 opciones'); return; }
-    const idx = parseInt(prompt(`Índice de la opción correcta (0-${opciones.length - 1}):`), 10);
+    const idx = parseInt(prompt(`Índice de la opción correcta (0-${opciones.length - 1}):`) ?? '', 10);
     if (isNaN(idx) || idx < 0 || idx >= opciones.length) { alert('Índice inválido'); return; }
     try {
       await createPregunta(id, { enunciado, opciones, indiceCorrecto: idx });
       alert('Pregunta agregada');
-    } catch (e) { setError(e.response?.data?.error?.message || 'Error'); }
+    } catch (e) { setError(getApiError(e, 'Error')); }
   };
 
   if (loading) return <LoadingSpinner />;
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
-      <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => data?.cursoId ? navigate(`/instructor/cursos/${data.cursoId}`) : navigate('/instructor/cursos')}
-          className="text-muted hover:text-primary transition-colors">←</button>
-        <h1 className="text-xl font-bold text-primary">Editar lección</h1>
-      </div>
+      <PageHeader
+        title="Editar lección"
+        onBack={() => data?.cursoId ? navigate(`/instructor/cursos/${data.cursoId}`) : navigate('/instructor/cursos')}
+      />
       {error && <div className="mb-4"><ErrorMessage message={error} /></div>}
       <form onSubmit={handleSubmit(onSave)} className="bg-card rounded-xl border border-theme p-5 flex flex-col gap-4">
         <div>
