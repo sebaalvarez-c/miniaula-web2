@@ -6,6 +6,8 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { SubmitIntentoDto } from './dto/submit-intento.dto';
+import { CreatePreguntaDto } from './dto/create-pregunta.dto';
+import { AuthUser } from '../common/types/auth-user.type';
 
 @ApiTags('cuestionarios')
 @Controller()
@@ -15,29 +17,29 @@ export class CuestionariosController {
   @Get('lecciones/:id/preguntas')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('estudiante')
-  getPreguntas(@Param('id') id: string, @CurrentUser() user: any) {
+  getPreguntas(@Param('id') id: string, @CurrentUser() user: AuthUser) {
     return this.cuestionariosService.getPreguntas(id, user.id);
   }
 
   @Post('lecciones/:id/intentos')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('estudiante')
-  submitIntento(@Param('id') id: string, @CurrentUser() user: any, @Body() dto: SubmitIntentoDto) {
+  submitIntento(@Param('id') id: string, @CurrentUser() user: AuthUser, @Body() dto: SubmitIntentoDto) {
     return this.cuestionariosService.submitIntento(id, user.id, dto.respuestas);
   }
 
   @Post('instructor/lecciones/:id/preguntas')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('instructor')
-  createPregunta(@Param('id') id: string, @CurrentUser() user: any, @Body() body: any) {
-    return this.cuestionariosService.createPregunta(id, user.id, body);
+  createPregunta(@Param('id') id: string, @CurrentUser() user: AuthUser, @Body() dto: CreatePreguntaDto) {
+    return this.cuestionariosService.createPregunta(id, user.id, dto);
   }
 
   @Delete('instructor/preguntas/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('instructor')
   @HttpCode(204)
-  deletePregunta(@Param('id') id: string, @CurrentUser() user: any) {
+  deletePregunta(@Param('id') id: string, @CurrentUser() user: AuthUser) {
     return this.cuestionariosService.deletePregunta(id, user.id);
   }
 }

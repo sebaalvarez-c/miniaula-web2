@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, ILike } from 'typeorm';
+import { Repository, ILike, FindOptionsWhere } from 'typeorm';
 import { Curso } from './entities/curso.entity';
 import { Leccion } from '../lecciones/entities/leccion.entity';
 import { Inscripcion } from '../inscripciones/entities/inscripcion.entity';
@@ -20,7 +20,7 @@ export class CursosService {
   ) {}
 
   async getCatalogo(q?: string, categoria?: string, page = 1, limit = 9) {
-    const where: any = { estado: 'publicado' };
+    const where: FindOptionsWhere<Curso> = { estado: 'publicado' };
     if (q) where.titulo = ILike(`%${q}%`);
     if (categoria && categoria !== 'Todas') where.categoria = categoria;
 

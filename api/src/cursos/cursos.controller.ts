@@ -7,6 +7,7 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { CreateCursoDto } from './dto/create-curso.dto';
 import { UpdateCursoDto, UpdateEstadoDto } from './dto/update-curso.dto';
+import { AuthUser } from '../common/types/auth-user.type';
 
 @ApiTags('cursos')
 @Controller()
@@ -31,28 +32,28 @@ export class CursosController {
   @Get('instructor/cursos')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('instructor')
-  getMisCursos(@CurrentUser() user: any) {
+  getMisCursos(@CurrentUser() user: AuthUser) {
     return this.cursosService.getMisCursos(user.id);
   }
 
   @Post('instructor/cursos')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('instructor')
-  createCurso(@CurrentUser() user: any, @Body() dto: CreateCursoDto) {
+  createCurso(@CurrentUser() user: AuthUser, @Body() dto: CreateCursoDto) {
     return this.cursosService.createCurso(user.id, dto);
   }
 
   @Patch('instructor/cursos/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('instructor')
-  updateCurso(@Param('id') id: string, @CurrentUser() user: any, @Body() dto: UpdateCursoDto) {
+  updateCurso(@Param('id') id: string, @CurrentUser() user: AuthUser, @Body() dto: UpdateCursoDto) {
     return this.cursosService.updateCurso(id, user.id, dto);
   }
 
   @Patch('instructor/cursos/:id/estado')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('instructor')
-  updateEstado(@Param('id') id: string, @CurrentUser() user: any, @Body() dto: UpdateEstadoDto) {
+  updateEstado(@Param('id') id: string, @CurrentUser() user: AuthUser, @Body() dto: UpdateEstadoDto) {
     return this.cursosService.updateEstado(id, user.id, dto.estado);
   }
 
@@ -60,14 +61,14 @@ export class CursosController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('instructor')
   @HttpCode(204)
-  deleteCurso(@Param('id') id: string, @CurrentUser() user: any) {
+  deleteCurso(@Param('id') id: string, @CurrentUser() user: AuthUser) {
     return this.cursosService.deleteCurso(id, user.id);
   }
 
   @Get('instructor/cursos/:id/resumen')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('instructor')
-  getResumen(@Param('id') id: string, @CurrentUser() user: any) {
+  getResumen(@Param('id') id: string, @CurrentUser() user: AuthUser) {
     return this.cursosService.getResumen(id, user.id);
   }
 }

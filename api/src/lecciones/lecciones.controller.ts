@@ -7,6 +7,7 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { CreateLeccionDto } from './dto/create-leccion.dto';
 import { UpdateLeccionDto } from './dto/update-leccion.dto';
+import { AuthUser } from '../common/types/auth-user.type';
 
 @ApiTags('lecciones')
 @Controller()
@@ -16,28 +17,28 @@ export class LeccionesController {
   @Get('lecciones/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('estudiante')
-  getLeccion(@Param('id') id: string, @CurrentUser() user: any) {
+  getLeccion(@Param('id') id: string, @CurrentUser() user: AuthUser) {
     return this.leccionesService.getLeccionAccesible(id, user.id);
   }
 
   @Post('lecciones/:id/completar')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('estudiante')
-  completarLeccion(@Param('id') id: string, @CurrentUser() user: any) {
+  completarLeccion(@Param('id') id: string, @CurrentUser() user: AuthUser) {
     return this.leccionesService.completarLeccion(id, user.id);
   }
 
   @Post('instructor/cursos/:cursoId/lecciones')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('instructor')
-  createLeccion(@Param('cursoId') cursoId: string, @CurrentUser() user: any, @Body() dto: CreateLeccionDto) {
+  createLeccion(@Param('cursoId') cursoId: string, @CurrentUser() user: AuthUser, @Body() dto: CreateLeccionDto) {
     return this.leccionesService.createLeccion(cursoId, user.id, dto);
   }
 
   @Patch('instructor/lecciones/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('instructor')
-  updateLeccion(@Param('id') id: string, @CurrentUser() user: any, @Body() dto: UpdateLeccionDto) {
+  updateLeccion(@Param('id') id: string, @CurrentUser() user: AuthUser, @Body() dto: UpdateLeccionDto) {
     return this.leccionesService.updateLeccion(id, user.id, dto);
   }
 
@@ -45,7 +46,7 @@ export class LeccionesController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('instructor')
   @HttpCode(204)
-  deleteLeccion(@Param('id') id: string, @CurrentUser() user: any) {
+  deleteLeccion(@Param('id') id: string, @CurrentUser() user: AuthUser) {
     return this.leccionesService.deleteLeccion(id, user.id);
   }
 }

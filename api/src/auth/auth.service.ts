@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
+import { User } from '../users/entities/user.entity';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ApiException } from '../common/exceptions/api.exception';
@@ -34,7 +35,7 @@ export class AuthService {
     return { token, user: this.usersService.toPublic(user) };
   }
 
-  private signToken(user: any) {
+  private signToken(user: Pick<User, 'id' | 'email' | 'rol'>): string {
     return this.jwtService.sign({ sub: user.id, email: user.email, rol: user.rol });
   }
 }
