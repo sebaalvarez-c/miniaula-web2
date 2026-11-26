@@ -1,11 +1,5 @@
-import {
-  ExceptionFilter,
-  Catch,
-  ArgumentsHost,
-  HttpException,
-  HttpStatus,
-} from '@nestjs/common';
-import { Response } from 'express';
+import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus } from '@nestjs/common';
+import { Request, Response } from 'express';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
@@ -13,38 +7,19 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
 
-    const status =
-      exception instanceof HttpException
-        ? exception.getStatus()
-        : HttpStatus.INTERNAL_SERVER_ERROR;
+    if (exception instanceof HttpException) {
+      const status = exception.getStatus();
+      const res = exception.getResponse() as any;
+      const code = typeof res === 'object' ? (res.code || res.error || 'ERROR') : 'ERROR';
+      const message = typeof res === 'object' ? (res.message || exception.message) : exception.message;
+      const details = typeof res === 'object' ? (res.details ?? null) : null;
 
-    const exceptionResponse =
-      exception instanceof HttpException
-        ? exception.getResponse()
-        : { message: 'Error interno del servidor' };
-
-    let message = 'Error inesperado';
-    let details: any[] = [];
-
-    if (typeof exceptionResponse === 'string') {
-      message = exceptionResponse;
-    } else if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
-      const resObj = exceptionResponse as any;
-      if (Array.isArray(resObj.message)) {
-        message = 'Error de validación';
-        details = resObj.message;
-      } else {
-        message = resObj.message || message;
-        details = Array.isArray(resObj.details) ? resObj.details : [];
-      }
+      return response.status(status).json({ error: { code, message, details } });
     }
 
-    response.status(status).json({
-      error: {
-        code: status,
-        message,
-        details,
-      },
+    console.error(exception);
+    return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+      error: { code: 'INTERNAL_ERROR', message: 'Internal server error', details: null },
     });
   }
 }

@@ -1,44 +1,52 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Param,
-  ParseIntPipe,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards, HttpCode } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { CuestionariosService } from './cuestionarios.service';
-import { SubmitIntentoDto } from './dto/submit-intento.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { SubmitIntentoDto } from './dto/submit-intento.dto';
+import { CreatePreguntaDto } from './dto/create-pregunta.dto';
+import { AuthUser } from '../common/types/auth-user.type';
 
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Controller('cuestionarios')
+@ApiTags('cuestionarios')
+@Controller()
 export class CuestionariosController {
-  constructor(private readonly cuestionariosService: CuestionariosService) {}
+  constructor(private cuestionariosService: CuestionariosService) {}
 
+  @Get('lecciones/:id/preguntas')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('estudiante')
+  getPreguntas(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.cuestionariosService.getPreguntas(id, user.id);
+  }
+
+  @Post('lecciones/:id/intentos')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('estudiante')
+  submitIntento(@Param('id') id: string, @CurrentUser() user: AuthUser, @Body() dto: SubmitIntentoDto) {
+    return this.cuestionariosService.submitIntento(id, user.id, dto.respuestas);
+  }
+
+  @Post('instructor/lecciones/:id/preguntas')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('instructor')
-  @Post('preguntas')
-  createPregunta(
-    @Body()
-    body: {
-      enunciado: string;
-      opciones: string[];
-      respuestaCorrecta: number;
-      leccionId: number;
-    },
-  ) {
-    return this.cuestionariosService.createPregunta(body);
+  createPregunta(@Param('id') id: string, @CurrentUser() user: AuthUser, @Body() dto: CreatePreguntaDto) {
+    return this.cuestionariosService.createPregunta(id, user.id, dto);
   }
 
-  @Get('leccion/:leccionId')
-  getPreguntasByLeccion(@Param('leccionId', ParseIntPipe) leccionId: number) {
-    return this.cuestionariosService.findPreguntasByLeccion(leccionId);
+  @Patch('instructor/preguntas/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('instructor')
+  updatePregunta(@Param('id') id: string, @CurrentUser() user: AuthUser, @Body() dto: CreatePreguntaDto) {
+    return this.cuestionariosService.updatePregunta(id, user.id, dto);
   }
 
-  @Post('intentos')
-  submitIntento(@Body() submitIntentoDto: SubmitIntentoDto) {
-    return this.cuestionariosService.evaluarIntento(submitIntentoDto);
+  @Delete('instructor/preguntas/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('instructor')
+  @HttpCode(204)
+  deletePregunta(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.cuestionariosService.deletePregunta(id, user.id);
   }
 }

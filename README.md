@@ -12,8 +12,11 @@ docker compose up --build
 Para desarrollo local sin Docker:
 
 ```bash
-yarn install   # en api/ y en web/
+cp api/.env.example api/.env   # completar DB_PASSWORD y JWT_SECRET
+yarn install   # en api/ y en web/ (también funciona pnpm install)
 ```
+
+Con pnpm, `api/pnpm-workspace.yaml` habilita el build nativo de `bcrypt` y deshabilita el script de telemetría de `@scarf/scarf`.
 
 | Servicio   | URL                              |
 |------------|----------------------------------|
@@ -30,7 +33,10 @@ POSTGRES_DB=miniaula
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=change_me
 JWT_SECRET=change_me_to_a_long_random_string
+DB_SYNCHRONIZE=true
 ```
+
+`JWT_SECRET` y `POSTGRES_PASSWORD` son obligatorios con Docker Compose. `DB_SYNCHRONIZE` debe ser `false` en producción (requiere migraciones); el seed y el desarrollo local usan `true`.
 
 > En CI o para desarrollo rápido se puede usar el archivo `.env` del repositorio con los valores por defecto. No commitear secretos reales.
 
@@ -44,7 +50,7 @@ JWT_SECRET=change_me_to_a_long_random_string
 | student2@mini.com        | Test1234!  | Estudiante |
 | student3@mini.com        | Test1234!  | Estudiante |
 
-El seed crea 3 cursos publicados con 5 lecciones cada uno (4 de contenido + 1 cuestionario con 5 preguntas).
+El seed crea 3 cursos publicados con 5 lecciones cada uno (4 de contenido + 1 cuestionario con 5 preguntas). El registro público siempre crea cuentas de estudiante; las cuentas de instructor provienen del seed.
 
 ## Stack
 
@@ -61,17 +67,13 @@ El seed crea 3 cursos publicados con 5 lecciones cada uno (4 de contenido + 1 cu
 api/
   src/
     auth/          # Registro, login, JWT
-    users/         # Perfil
+    users/         # Perfil (/users/me)
     cursos/        # CRUD de cursos, catálogo, panel
-    instructor/    # Rutas exclusivas para instructores
-    lecciones/     # CRUD de lecciones, acceso secuencial
-    preguntas/     # CRUD de preguntas
-    cuestionarios/ # Lógica de cuestionarios
-    inscripciones/ # Inscripción a cursos
-    progreso/      # Marcar completada, rendir cuestionario
-    common/        # Guards, decoradores, pipes compartidos
-    middleware/    # Interceptores y filtros de errores
-    config/        # Configuración de TypeORM y Swagger
+    lecciones/     # CRUD y reorden de lecciones, acceso secuencial
+    cuestionarios/ # Preguntas y lógica de cuestionarios
+    inscripciones/ # Inscripción y progreso
+    common/        # Guards, decoradores, filtros y tipos compartidos
+    config/        # Secreto JWT
     database/      # Seed
 web/
   src/
@@ -96,3 +98,4 @@ web/
 | RN-06  | Un curso con inscritos no se puede eliminar, solo archivar (409)                 |
 | RN-07  | El instructor solo modifica sus propios recursos (403)                           |
 | RN-08  | El estudiante solo ve su propio progreso                                         |
+| RN-09  | Reordenar lecciones exige propiedad, lista completa y es transaccional           |

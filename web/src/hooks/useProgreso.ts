@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { getProgresoCurso } from '../services/cursos.service.js';
+import type { ProgresoData } from '../types';
 
-export function useProgreso(cursoId) {
-  const [data, setData] = useState(null);
+export function useProgreso(cursoId: string) {
+  const [data, setData] = useState<ProgresoData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!cursoId) return;

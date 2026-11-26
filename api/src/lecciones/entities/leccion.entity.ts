@@ -1,44 +1,38 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  ManyToOne,
-  JoinColumn,
-  CreateDateColumn,
-  UpdateDateColumn,
-} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, JoinColumn, Unique } from 'typeorm';
 import { Curso } from '../../cursos/entities/curso.entity';
+import { Pregunta } from '../../cuestionarios/entities/pregunta.entity';
 
 @Entity('lecciones')
+@Unique(['cursoId', 'orden'])
 export class Leccion {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-  @Column({ length: 180 })
+  @Column()
   titulo: string;
 
-  @Column({ type: 'text' })
+  @Column({ default: 'contenido' })
+  tipo: string;
+
+  @Column({ nullable: true, type: 'text' })
   contenido: string;
 
-  @Column({ type: 'int', default: 1 })
+  @Column({ nullable: true })
+  videoUrl: string;
+
+  @Column({ nullable: true, type: 'float' })
+  notaMinima: number;
+
+  @Column()
   orden: number;
 
-  @Column({ name: 'duracion_minutos', type: 'int', default: 10 })
-  duracionMinutos: number;
+  @Column()
+  cursoId: string;
 
-  @Column({ name: 'video_url', nullable: true })
-  videoUrl?: string;
-
-  @Column({ name: 'curso_id' })
-  cursoId: number;
-
-  @ManyToOne(() => Curso, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'curso_id' })
+  @ManyToOne(() => Curso, (c) => c.lecciones, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'cursoId' })
   curso: Curso;
 
-  @CreateDateColumn({ name: 'created_at' })
-  createdAt: Date;
-
-  @UpdateDateColumn({ name: 'updated_at' })
-  updatedAt: Date;
+  @OneToMany(() => Pregunta, (p) => p.leccion, { cascade: true })
+  preguntas: Pregunta[];
 }
