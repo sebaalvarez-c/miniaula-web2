@@ -1,132 +1,86 @@
-    import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth';
-import { cursosService, Curso } from '../../services/cursos.service';
+import { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { getMisCursos, getResumen } from '../../services/cursos.service.js';
+import { LoadingSpinner } from '../../components/LoadingSpinner';
+import { ErrorMessage } from '../../components/ErrorMessage';
+import { EmptyState } from '../../components/EmptyState';
 
-export const PanelPage: React.FC = () => {
-  const { user } = useAuth();
-  const [cursos, setCursos] = useState<Curso[]>([]);
+export function PanelPage() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [cursos, setCursos] = useState([]);
+  const [selected, setSelected] = useState(id || null);
+  const [resumen, setResumen] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const fetchMisCursos = async () => {
-      try {
-        const data = await cursosService.getAll();
-        // Filtra los cursos creados por el instructor autenticado si incluyen instructorId
-        const propios = user
-          ? data.filter((c: any) => !c.instructorId || c.instructorId === user.id)
-          : data;
-        setCursos(propios);
-      } catch (err: any) {
-        setError(
-          err.response?.data?.error?.message ||
-            'No se pudo cargar el resumen del panel',
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchMisCursos();
-  }, [user]);
+    getMisCursos().then(setCursos).catch(() => {}).finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    if (!selected) return;
+    setError(''); setResumen(null);
+    getResumen(selected)
+      .then(setResumen)
+      .catch((e) => setError(e.response?.data?.error?.message || 'Error'));
+  }, [selected]);
+
+  const maxReached = resumen ? Math.max(...resumen.lecciones.map((l) => l.estudiantesLlegaron), 1) : 1;
+
+  if (loading) return <LoadingSpinner />;
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-            Panel de Instructor
-          </h1>
-          <p className="text-gray-600 mt-1">
-            Bienvenido{user?.nombre ? `, ${user.nombre}` : ''}. Gestiona tus cursos y contenidos.
-          </p>
-        </div>
-
-        <Link
-          to="/instructor/cursos"
-          className="inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2.5 rounded-lg transition"
-        >
-          Ver mis cursos
-        </Link>
+    <div className="max-w-4xl mx-auto px-4 py-6">
+      <div className="flex items-center gap-3 mb-6">
+        <button onClick={() => navigate('/instructor/cursos')} className="text-muted hover:text-primary transition-colors">←</button>
+        <h1 className="text-xl font-bold text-primary">Panel</h1>
       </div>
 
-      {error && (
-        <div className="mb-6 p-4 rounded-lg bg-red-50 text-red-700 text-sm">
-          {error}
-        </div>
-      )}
-
-      {/* Tarjetas de resumen */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-          <p className="text-sm font-medium text-gray-500">Cursos publicados</p>
-          <p className="text-3xl font-bold text-gray-900 mt-2">
-            {loading ? '...' : cursos.length}
-          </p>
-        </div>
-
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-          <p className="text-sm font-medium text-gray-500">Rol de cuenta</p>
-          <p className="text-xl font-semibold text-blue-600 mt-2 capitalize">
-            {user?.rol || 'Instructor'}
-          </p>
-        </div>
-
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-          <p className="text-sm font-medium text-gray-500">Gestión académica</p>
-          <Link
-            to="/instructor/cursos"
-            className="inline-block mt-2 text-sm font-medium text-blue-600 hover:underline"
-          >
-            Administrar lecciones y evaluaciones →
-          </Link>
-        </div>
+      <div className="mb-6">
+        <label className="block text-sm font-medium text-primary mb-1">Seleccioná un curso</label>
+        <select value={selected || ''} onChange={(e) => setSelected(e.target.value)}
+          className="bg-surface border border-theme rounded-lg px-3 py-2 text-sm text-primary focus:outline-none focus:ring-2 focus:ring-brand-400 transition-all">
+          <option value="">-- Elegí un curso --</option>
+          {cursos.map((c) => <option key={c.id} value={c.id}>{c.titulo}</option>)}
+        </select>
       </div>
 
-      {/* Últimos cursos */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-gray-900">Cursos recientes</h2>
-          <Link
-            to="/instructor/cursos"
-            className="text-sm text-blue-600 hover:underline font-medium"
-          >
-            Ver todos
-          </Link>
-        </div>
+      {error && <ErrorMessage message={error} />}
+      {!selected && <EmptyState title="Elegí un curso para ver el panel" />}
 
-        {loading ? (
-          <p className="text-gray-500 text-sm">Cargando cursos...</p>
-        ) : cursos.length === 0 ? (
-          <p className="text-gray-500 text-sm">
-            Aún no tienes cursos registrados.
-          </p>
-        ) : (
-          <div className="divide-y divide-gray-200">
-            {cursos.slice(0, 5).map((curso) => (
-              <div
-                key={curso.id}
-                className="py-3.5 flex items-center justify-between gap-4"
-              >
-                <div>
-                  <h3 className="font-semibold text-gray-900">{curso.titulo}</h3>
-                  <p className="text-sm text-gray-500 line-clamp-1">
-                    {curso.descripcion}
-                  </p>
-                </div>
-                <Link
-                  to={`/cursos/${curso.id}`}
-                  className="text-sm font-medium text-blue-600 hover:underline shrink-0"
-                >
-                  Ver detalle
-                </Link>
+      {resumen && (
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+            {[
+              { label: 'Inscritos', value: resumen.inscritos },
+              { label: 'Progreso promedio', value: `${resumen.progresoPromedio}%` },
+              { label: 'Nota promedio', value: resumen.notaPromedio || '—' },
+              { label: 'Completaron', value: '—' },
+            ].map(({ label, value }) => (
+              <div key={label} className="bg-card rounded-xl border border-theme p-4 text-center">
+                <p className="text-xs text-muted mb-1">{label}</p>
+                <p className="text-2xl font-bold text-primary">{value}</p>
               </div>
             ))}
           </div>
-        )}
-      </div>
+
+          <div className="bg-card rounded-xl border border-theme p-5">
+            <h2 className="font-semibold text-sm text-primary mb-4">Estudiantes que llegaron a cada lección</h2>
+            <div className="flex flex-col gap-3">
+              {resumen.lecciones.map((l) => (
+                <div key={l.id} className="flex items-center gap-3">
+                  <span className="text-sm text-muted w-48 truncate">{l.orden}. {l.titulo}</span>
+                  <div className="flex-1 bg-surface rounded-full h-3 overflow-hidden border border-theme">
+                    <div className="gradient-brand h-3 rounded-full transition-all" style={{ width: `${(l.estudiantesLlegaron / maxReached) * 100}%` }} />
+                  </div>
+                  <span className="text-sm text-muted w-8 text-right">{l.estudiantesLlegaron}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
-};
-
-export default PanelPage;
+}

@@ -1,75 +1,58 @@
-import React, { createContext, useState, useEffect, ReactNode } from 'react';
-import { authService, User } from '../services/auth.service';
+import { createContext, useState, useEffect, useCallback } from 'react';
+import * as authService from '../services/auth.service.js';
 
-interface AuthContextType {
-  user: User | null;
-  token: string | null;
-  loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (
-    nombre: string,
-    email: string,
-    password: string,
-    rol?: 'student' | 'instructor',
-  ) => Promise<void>;
-  logout: () => void;
-}
+export const AuthContext = createContext(null);
 
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('user')); } catch { return null; }
+  });
+  const [token, setToken] = useState(() => localStorage.getItem('token'));
+  const [loading, setLoading] = useState(false);
 
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'));
-  const [loading, setLoading] = useState<boolean>(true);
+  const saveSession = useCallback((data) => {
+    const t = data.access_token ?? data.token;
+    localStorage.setItem('token', t);
+    localStorage.setItem('user', JSON.stringify(data.user));
+    setToken(t);
+    setUser(data.user);
+  }, []);
 
-  useEffect(() => {
-    const initAuth = async () => {
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-      try {
-        const profile = await authService.getProfile();
-        setUser(profile);
-      } catch {
-        localStorage.removeItem('token');
-        setToken(null);
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-    initAuth();
-  }, [token]);
+  const login = useCallback(async (email, password) => {
+    setLoading(true);
+    try {
+      const data = await authService.login({ email, password });
+      saveSession(data);
+    } finally {
+      setLoading(false);
+    }
+  }, [saveSession]);
 
-  const login = async (email: string, password: string) => {
-    const res = await authService.login(email, password);
-    localStorage.setItem('token', res.access_token);
-    setToken(res.access_token);
-    setUser(res.user);
-  };
+  const register = useCallback(async (formData) => {
+    setLoading(true);
+    try {
+      await authService.register(formData);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const register = async (
-    nombre: string,
-    email: string,
-    password: string,
-    rol: 'student' | 'instructor' = 'student',
-  ) => {
-    const res = await authService.register(nombre, email, password, rol);
-    localStorage.setItem('token', res.access_token);
-    setToken(res.access_token);
-    setUser(res.user);
-  };
-
-  const logout = () => {
+  const logout = useCallback(() => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     setToken(null);
     setUser(null);
-  };
+  }, []);
+
+  const updateUser = useCallback((updated) => {
+    const next = { ...user, ...updated };
+    localStorage.setItem('user', JSON.stringify(next));
+    setUser(next);
+  }, [user]);
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, register, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );
-};
+}
