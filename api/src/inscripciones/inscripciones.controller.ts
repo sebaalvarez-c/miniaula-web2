@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { InscripcionesService } from './inscripciones.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -11,6 +12,7 @@ class InscribirDto {
   cursoId: string;
 }
 
+@ApiTags('inscripciones')
 @Controller()
 export class InscripcionesController {
   constructor(private inscripcionesService: InscripcionesService) {}

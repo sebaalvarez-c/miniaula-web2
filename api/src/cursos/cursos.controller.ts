@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, HttpCode } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { CursosService } from './cursos.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -7,6 +8,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { CreateCursoDto } from './dto/create-curso.dto';
 import { UpdateCursoDto, UpdateEstadoDto } from './dto/update-curso.dto';
 
+@ApiTags('cursos')
 @Controller()
 export class CursosController {
   constructor(private cursosService: CursosService) {}
