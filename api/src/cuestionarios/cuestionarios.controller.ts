@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Param, Body, UseGuards, HttpCode } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards, HttpCode } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { CuestionariosService } from './cuestionarios.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -33,6 +33,13 @@ export class CuestionariosController {
   @Roles('instructor')
   createPregunta(@Param('id') id: string, @CurrentUser() user: AuthUser, @Body() dto: CreatePreguntaDto) {
     return this.cuestionariosService.createPregunta(id, user.id, dto);
+  }
+
+  @Patch('instructor/preguntas/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('instructor')
+  updatePregunta(@Param('id') id: string, @CurrentUser() user: AuthUser, @Body() dto: CreatePreguntaDto) {
+    return this.cuestionariosService.updatePregunta(id, user.id, dto);
   }
 
   @Delete('instructor/preguntas/:id')

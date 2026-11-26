@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { getMisCursos, updateCurso, updateEstado } from '../../services/cursos.service.js';
-import { createLeccion, deleteLeccion } from '../../services/lecciones.service.js';
+import { createLeccion, deleteLeccion, reordenarLecciones } from '../../services/lecciones.service.js';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { ErrorMessage } from '../../components/ErrorMessage';
 import { inputCls } from '../../lib/styles';
@@ -26,12 +26,16 @@ export function CourseEditorPage() {
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [addingLesson, setAddingLesson] = useState(false);
+  const [reordering, setReordering] = useState(false);
   const { register, handleSubmit, reset, formState: { isDirty } } = useForm<CourseFormData>();
 
   const load = async () => {
     const cursos: Curso[] = await getMisCursos();
     const found = cursos.find((c) => c.id === id);
     if (!found) { navigate('/instructor/cursos'); return; }
+    if (found.lecciones) {
+      found.lecciones = [...found.lecciones].sort((a, b) => a.orden - b.orden);
+    }
     setCurso(found);
     reset({
       titulo: found.titulo === 'Nuevo curso' ? '' : found.titulo,
@@ -63,7 +67,11 @@ export function CourseEditorPage() {
     if (!id) return;
     setAddingLesson(true);
     try {
-      await createLeccion(id, { titulo: tipo === 'cuestionario' ? 'Nuevo cuestionario' : 'Nueva lección', tipo, notaMinima: tipo === 'cuestionario' ? 70 : undefined });
+      await createLeccion(id, {
+        titulo: tipo === 'cuestionario' ? 'Nuevo cuestionario' : 'Nueva lección',
+        tipo,
+        notaMinima: tipo === 'cuestionario' ? 70 : undefined,
+      });
       await load();
     } catch (e) { setError(getApiError(e, 'Error')); }
     finally { setAddingLesson(false); }
@@ -73,6 +81,36 @@ export function CourseEditorPage() {
     if (!confirm('¿Eliminar esta lección?')) return;
     try { await deleteLeccion(leccionId); await load(); }
     catch (e) { setError(getApiError(e, 'Error')); }
+  };
+
+  const handleMoveLesson = async (index: number, direction: -1 | 1) => {
+    if (!id || !curso?.lecciones) return;
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= curso.lecciones.length) return;
+
+    const prevLecciones = [...curso.lecciones];
+    const nextLecciones = [...curso.lecciones];
+    const [moved] = nextLecciones.splice(index, 1);
+    nextLecciones.splice(targetIndex, 0, moved);
+
+    const updatedWithOrder = nextLecciones.map((leccion, idx) => ({
+      ...leccion,
+      orden: idx + 1,
+    }));
+
+    setCurso({ ...curso, lecciones: updatedWithOrder });
+    setReordering(true);
+    setError('');
+
+    try {
+      const lecciones = await reordenarLecciones(id, updatedWithOrder.map((l) => l.id));
+      setCurso((prev) => prev ? { ...prev, lecciones } : prev);
+    } catch (e) {
+      setCurso({ ...curso, lecciones: prevLecciones });
+      setError(getApiError(e, 'Error al reordenar lecciones'));
+    } finally {
+      setReordering(false);
+    }
   };
 
   if (loading) return <LoadingSpinner />;
@@ -141,20 +179,39 @@ export function CourseEditorPage() {
           <div className="flex justify-between items-center mb-4">
             <h2 className="font-semibold text-sm text-muted">Lecciones ({curso.lecciones?.length})</h2>
             <div className="flex gap-2">
-              <button onClick={() => handleAddLesson('contenido')} disabled={addingLesson}
+              <button onClick={() => handleAddLesson('contenido')} disabled={addingLesson || reordering}
                 className="text-xs border border-theme text-muted px-2 py-1 rounded hover:text-primary hover:border-brand-400 disabled:opacity-50 transition-colors">
                 + Contenido
               </button>
-              <button onClick={() => handleAddLesson('cuestionario')} disabled={addingLesson}
+              <button onClick={() => handleAddLesson('cuestionario')} disabled={addingLesson || reordering}
                 className="text-xs border border-orange-300 dark:border-orange-800 text-orange-600 dark:text-orange-400 px-2 py-1 rounded hover:bg-orange-50 dark:hover:bg-orange-900/20 disabled:opacity-50 transition-colors">
                 + Quiz
               </button>
             </div>
           </div>
           <div className="flex flex-col gap-2">
-            {curso.lecciones?.map((l) => (
+            {curso.lecciones?.map((l, idx) => (
               <div key={l.id} className="flex items-center gap-2 p-2 rounded-lg border border-theme hover:bg-surface transition-colors">
-                <span className="text-subtle text-sm">≡</span>
+                <div className="flex items-center gap-0.5">
+                  <button
+                    type="button"
+                    disabled={idx === 0 || reordering}
+                    onClick={() => handleMoveLesson(idx, -1)}
+                    className="px-1.5 py-0.5 text-xs border border-theme rounded text-muted hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    title="Subir lección"
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    disabled={idx === (curso.lecciones?.length ?? 0) - 1 || reordering}
+                    onClick={() => handleMoveLesson(idx, 1)}
+                    className="px-1.5 py-0.5 text-xs border border-theme rounded text-muted hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    title="Bajar lección"
+                  >
+                    ↓
+                  </button>
+                </div>
                 <span className="text-sm flex-1 text-primary">{l.orden}. {l.titulo}</span>
                 <span className={`text-xs px-1.5 py-0.5 rounded ${
                   l.tipo === 'cuestionario'
@@ -164,7 +221,7 @@ export function CourseEditorPage() {
                   {l.tipo === 'cuestionario' ? 'Quiz' : 'Contenido'}
                 </span>
                 <button onClick={() => navigate(`/instructor/lecciones/${l.id}`)} className="text-xs text-brand-600 dark:text-brand-400 hover:underline">Editar</button>
-                <button onClick={() => handleDeleteLesson(l.id)} className="text-xs text-red-400 hover:text-red-600 transition-colors">✕</button>
+                <button onClick={() => handleDeleteLesson(l.id)} disabled={reordering} className="text-xs text-red-400 hover:text-red-600 disabled:opacity-30 transition-colors">✕</button>
               </div>
             ))}
             {curso.lecciones?.length === 0 && <p className="text-sm text-muted text-center py-4">No hay lecciones todavía</p>}

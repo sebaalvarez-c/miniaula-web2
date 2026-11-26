@@ -59,19 +59,29 @@ export class SeedService {
   ) {}
 
   async run() {
-    const count = await this.userRepo.count();
-    if (count > 0) return;
-
-    const hash = await bcrypt.hash('Test1234!', 10);
-
-    const i1 = await this.userRepo.save(this.userRepo.create({ nombre: 'Ana Pérez', email: 'instructor1@mini.com', passwordHash: hash, rol: 'instructor' }));
-    const i2 = await this.userRepo.save(this.userRepo.create({ nombre: 'Luis Rojas', email: 'instructor2@mini.com', passwordHash: hash, rol: 'instructor' }));
-
-    await this.userRepo.save([
-      this.userRepo.create({ nombre: 'Juan García', email: 'student1@mini.com', passwordHash: hash, rol: 'estudiante' }),
-      this.userRepo.create({ nombre: 'María López', email: 'student2@mini.com', passwordHash: hash, rol: 'estudiante' }),
-      this.userRepo.create({ nombre: 'Carlos Vega', email: 'student3@mini.com', passwordHash: hash, rol: 'estudiante' }),
+    const [userCount, courseCount] = await Promise.all([
+      this.userRepo.count(),
+      this.cursoRepo.count(),
     ]);
+    if (userCount > 0 && courseCount > 0) return;
+
+    if (userCount === 0) {
+      const hash = await bcrypt.hash('Test1234!', 10);
+
+      await this.userRepo.save([
+        this.userRepo.create({ nombre: 'Ana Pérez', email: 'instructor1@mini.com', passwordHash: hash, rol: 'instructor' }),
+        this.userRepo.create({ nombre: 'Luis Rojas', email: 'instructor2@mini.com', passwordHash: hash, rol: 'instructor' }),
+        this.userRepo.create({ nombre: 'Juan García', email: 'student1@mini.com', passwordHash: hash, rol: 'estudiante' }),
+        this.userRepo.create({ nombre: 'María López', email: 'student2@mini.com', passwordHash: hash, rol: 'estudiante' }),
+        this.userRepo.create({ nombre: 'Carlos Vega', email: 'student3@mini.com', passwordHash: hash, rol: 'estudiante' }),
+      ]);
+    }
+
+    if (courseCount > 0) return;
+
+    const i1 = await this.userRepo.findOne({ where: { email: 'instructor1@mini.com' } });
+    const i2 = await this.userRepo.findOne({ where: { email: 'instructor2@mini.com' } });
+    if (!i1 || !i2) throw new Error('No se pudieron crear los cursos: faltan instructores en la base de datos');
 
     const coursesData = [
       { titulo: 'Node.js desde cero', descripcion: 'Aprende a crear APIs REST con Node.js y Express desde los fundamentos.', categoria: 'Programación', nivel: 'Básico', instructorId: i1.id },
@@ -98,6 +108,6 @@ export class SeedService {
       );
     }
 
-    console.log('Seed completed: 2 instructors, 3 students, 3 published courses (5 lessons + 1 quiz each)');
+    console.log('Seed completado: 2 instructores, 3 estudiantes, 3 cursos publicados (5 lecciones por curso, una de ellas quiz)');
   }
 }

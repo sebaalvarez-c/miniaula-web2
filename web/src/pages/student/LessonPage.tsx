@@ -84,6 +84,9 @@ export const LessonPage: React.FC = () => {
     );
   }
 
+  const indiceActual = progreso?.lecciones.findIndex((l) => l.leccionId === leccionId) ?? -1;
+  const anterior = indiceActual > 0 ? progreso?.lecciones[indiceActual - 1] : undefined;
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-6 flex gap-6 flex-col lg:flex-row animate-fade-in">
       {/* Sidebar */}
@@ -153,8 +156,9 @@ export const LessonPage: React.FC = () => {
 
             <div className="mt-8 pt-6 border-t border-theme flex items-center justify-between">
               <button
-                onClick={() => navigate(-1)}
-                className="text-sm text-muted hover:text-primary transition-colors"
+                onClick={() => anterior && navigate(`/cursos/${cursoId}/lecciones/${anterior.leccionId}`)}
+                disabled={!anterior}
+                className="text-sm text-muted hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               >
                 ← Anterior
               </button>

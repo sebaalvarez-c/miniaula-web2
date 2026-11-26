@@ -1,29 +1,63 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
 import { useAuth } from '../../hooks/useAuth';
 import { getApiError } from '../../lib/api-error';
+
+interface LoginForm {
+  email: string;
+  password: string;
+}
 
 export const LoginPage: React.FC = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginForm>();
+
+  const onSubmit = async (data: LoginForm) => {
     setError('');
-    setSubmitting(true);
     try {
-      await login(email, password);
+      await login(data.email, data.password);
       navigate('/');
     } catch (err: unknown) {
       setError(getApiError(err, 'Credenciales incorrectas'));
-    } finally {
-      setSubmitting(false);
     }
   };
+
+  const getInputStyle = (hasError: boolean): React.CSSProperties => ({
+    width: '100%',
+    display: 'block',
+    background: 'var(--bg-card)',
+    border: `1px solid ${hasError ? '#dc2626' : 'var(--border)'}`,
+    borderRadius: '10px',
+    padding: '12px 14px',
+    fontSize: '14px',
+    color: 'var(--text-primary)',
+    outline: 'none',
+    transition: 'border-color 0.2s, box-shadow 0.2s',
+  });
+
+  const emailField = register('email', {
+    required: 'El email es obligatorio',
+    pattern: {
+      value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+      message: 'Ingresá un email con formato válido',
+    },
+  });
+
+  const passwordField = register('password', {
+    required: 'La contraseña es obligatoria',
+    minLength: {
+      value: 6,
+      message: 'La contraseña debe tener al menos 6 caracteres',
+    },
+  });
 
   return (
     <div className="min-h-screen flex" style={{ background: 'var(--bg-page)' }}>
@@ -32,7 +66,6 @@ export const LoginPage: React.FC = () => {
         className="hidden lg:flex lg:w-1/2 flex-col justify-between p-14 relative overflow-hidden"
         style={{ backgroundColor: '#0f0d0a' }}
       >
-        {/* Animated background shapes */}
         <div style={{
           position: 'absolute', top: '-80px', right: '-80px',
           width: '400px', height: '400px',
@@ -54,7 +87,6 @@ export const LoginPage: React.FC = () => {
           border: '1px solid rgba(255,255,255,0.03)',
           animation: 'floatC 16s ease-in-out infinite',
         }} />
-        {/* Dot grid pattern */}
         <div style={{
           position: 'absolute', inset: 0,
           backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px)',
@@ -132,85 +164,83 @@ export const LoginPage: React.FC = () => {
             </div>
           )}
 
-          <form onSubmit={handleSubmit}>
-            <div style={{ animation: 'loginEnter 0.9s 0.20s cubic-bezier(0.16,1,0.3,1) both' }}>
+          <form onSubmit={handleSubmit(onSubmit)} noValidate>
+            <div style={{ marginBottom: '16px', animation: 'loginEnter 0.9s 0.20s cubic-bezier(0.16,1,0.3,1) both' }}>
               <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
                 Email
               </label>
               <input
                 type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
                 placeholder="tu@correo.com"
                 className="login-input"
-                style={{
-                  width: '100%', display: 'block',
-                  background: 'var(--bg-card)',
-                  border: '1px solid var(--border)',
-                  borderRadius: '10px',
-                  padding: '12px 14px',
-                  fontSize: '14px',
-                  color: 'var(--text-primary)',
-                  outline: 'none',
-                  marginBottom: '16px',
-                  transition: 'border-color 0.2s, box-shadow 0.2s',
+                style={getInputStyle(!!errors.email)}
+                {...emailField}
+                onFocus={e => {
+                  e.target.style.borderColor = errors.email ? '#dc2626' : 'var(--text-primary)';
+                  e.target.style.boxShadow = '0 0 0 3px rgba(28,26,22,0.08)';
                 }}
-                onFocus={e => { e.target.style.borderColor = 'var(--text-primary)'; e.target.style.boxShadow = '0 0 0 3px rgba(28,26,22,0.08)'; }}
-                onBlur={e => { e.target.style.borderColor = 'var(--border)'; e.target.style.boxShadow = 'none'; }}
+                onBlur={e => {
+                  emailField.onBlur(e);
+                  e.target.style.borderColor = errors.email ? '#dc2626' : 'var(--border)';
+                  e.target.style.boxShadow = 'none';
+                }}
               />
+              {errors.email && (
+                <p className="mt-1.5 text-xs" style={{ color: '#dc2626' }}>
+                  {errors.email.message}
+                </p>
+              )}
             </div>
 
-            <div style={{ animation: 'loginEnter 0.9s 0.32s cubic-bezier(0.16,1,0.3,1) both' }}>
+            <div style={{ marginBottom: '20px', animation: 'loginEnter 0.9s 0.32s cubic-bezier(0.16,1,0.3,1) both' }}>
               <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
                 Contraseña
               </label>
               <input
                 type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                style={{
-                  width: '100%', display: 'block',
-                  background: 'var(--bg-card)',
-                  border: '1px solid var(--border)',
-                  borderRadius: '10px',
-                  padding: '12px 14px',
-                  fontSize: '14px',
-                  color: 'var(--text-primary)',
-                  outline: 'none',
-                  marginBottom: '20px',
-                  transition: 'border-color 0.2s, box-shadow 0.2s',
+                style={getInputStyle(!!errors.password)}
+                {...passwordField}
+                onFocus={e => {
+                  e.target.style.borderColor = errors.password ? '#dc2626' : 'var(--text-primary)';
+                  e.target.style.boxShadow = '0 0 0 3px rgba(28,26,22,0.08)';
                 }}
-                onFocus={e => { e.target.style.borderColor = 'var(--text-primary)'; e.target.style.boxShadow = '0 0 0 3px rgba(28,26,22,0.08)'; }}
-                onBlur={e => { e.target.style.borderColor = 'var(--border)'; e.target.style.boxShadow = 'none'; }}
+                onBlur={e => {
+                  passwordField.onBlur(e);
+                  e.target.style.borderColor = errors.password ? '#dc2626' : 'var(--border)';
+                  e.target.style.boxShadow = 'none';
+                }}
               />
+              {errors.password && (
+                <p className="mt-1.5 text-xs" style={{ color: '#dc2626' }}>
+                  {errors.password.message}
+                </p>
+              )}
             </div>
 
             <div style={{ animation: 'loginEnter 0.9s 0.44s cubic-bezier(0.16,1,0.3,1) both' }}>
               <button
                 type="submit"
-                disabled={submitting}
+                disabled={isSubmitting}
                 style={{
                   width: '100%',
-                  background: submitting ? 'rgba(28,26,22,0.6)' : 'var(--accent)',
+                  background: isSubmitting ? 'rgba(28,26,22,0.6)' : 'var(--accent)',
                   color: 'var(--accent-fg)',
                   border: 'none',
                   borderRadius: '10px',
                   padding: '13px',
                   fontSize: '14px',
                   fontWeight: 600,
-                  cursor: submitting ? 'not-allowed' : 'pointer',
+                  cursor: isSubmitting ? 'not-allowed' : 'pointer',
                   transition: 'opacity 0.15s, transform 0.15s',
                   letterSpacing: '-0.01em',
                 }}
-                onMouseEnter={e => { if (!submitting) (e.target as HTMLButtonElement).style.opacity = '0.85'; }}
+                onMouseEnter={e => { if (!isSubmitting) (e.target as HTMLButtonElement).style.opacity = '0.85'; }}
                 onMouseLeave={e => { (e.target as HTMLButtonElement).style.opacity = '1'; }}
-                onMouseDown={e => { if (!submitting) (e.target as HTMLButtonElement).style.transform = 'scale(0.99)'; }}
+                onMouseDown={e => { if (!isSubmitting) (e.target as HTMLButtonElement).style.transform = 'scale(0.99)'; }}
                 onMouseUp={e => { (e.target as HTMLButtonElement).style.transform = 'scale(1)'; }}
               >
-                {submitting ? (
+                {isSubmitting ? (
                   <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                     <svg style={{ animation: 'spin 1s linear infinite', width: 16, height: 16 }} viewBox="0 0 24 24" fill="none">
                       <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity="0.3"/>

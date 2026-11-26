@@ -1,52 +1,72 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
 import { useAuth } from '../../hooks/useAuth';
 import { getApiError } from '../../lib/api-error';
 
-export const RegisterPage: React.FC = () => {
-  const { register } = useAuth();
-  const navigate = useNavigate();
-  const [nombre, setNombre] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [rol, setRol] = useState<'student' | 'instructor'>('student');
-  const [error, setError] = useState('');
-  const [submitting, setSubmitting] = useState(false);
+interface RegisterForm {
+  nombre: string;
+  email: string;
+  password: string;
+}
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+export const RegisterPage: React.FC = () => {
+  const { register: registerUser } = useAuth();
+  const navigate = useNavigate();
+  const [error, setError] = useState('');
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<RegisterForm>();
+
+  const onSubmit = async (data: RegisterForm) => {
     setError('');
-    setSubmitting(true);
     try {
-      await register(nombre, email, password, rol);
+      await registerUser(data.nombre, data.email, data.password);
       navigate('/');
     } catch (err: unknown) {
       setError(getApiError(err, 'Error al registrar usuario'));
-    } finally {
-      setSubmitting(false);
     }
   };
 
-  const inputStyle: React.CSSProperties = {
-    width: '100%', display: 'block',
+  const getInputStyle = (hasError: boolean): React.CSSProperties => ({
+    width: '100%',
+    display: 'block',
     background: 'var(--bg-card)',
-    border: '1px solid var(--border)',
+    border: `1px solid ${hasError ? '#dc2626' : 'var(--border)'}`,
     borderRadius: '10px',
     padding: '12px 14px',
     fontSize: '14px',
     color: 'var(--text-primary)',
     outline: 'none',
     transition: 'border-color 0.2s, box-shadow 0.2s',
-  };
+  });
 
-  const onFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-    e.target.style.borderColor = 'var(--text-primary)';
-    e.target.style.boxShadow = '0 0 0 3px rgba(28,26,22,0.08)';
-  };
-  const onBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    e.target.style.borderColor = 'var(--border)';
-    e.target.style.boxShadow = 'none';
-  };
+  const nombreField = register('nombre', {
+    required: 'El nombre es obligatorio',
+    minLength: {
+      value: 2,
+      message: 'El nombre debe tener al menos 2 caracteres',
+    },
+  });
+
+  const emailField = register('email', {
+    required: 'El email es obligatorio',
+    pattern: {
+      value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+      message: 'Ingresá un email con formato válido',
+    },
+  });
+
+  const passwordField = register('password', {
+    required: 'La contraseña es obligatoria',
+    minLength: {
+      value: 6,
+      message: 'La contraseña debe tener al menos 6 caracteres',
+    },
+  });
 
   return (
     <div className="min-h-screen flex" style={{ background: 'var(--bg-page)' }}>
@@ -55,7 +75,6 @@ export const RegisterPage: React.FC = () => {
         className="hidden lg:flex lg:w-1/2 flex-col justify-between p-14 relative overflow-hidden"
         style={{ backgroundColor: '#0f0d0a' }}
       >
-        {/* Animated background shapes */}
         <div style={{
           position: 'absolute', top: '-80px', right: '-80px',
           width: '400px', height: '400px', borderRadius: '50%',
@@ -96,7 +115,7 @@ export const RegisterPage: React.FC = () => {
           </h2>
           <p className="text-white/40 text-sm leading-relaxed"
              style={{ animation: 'loginEnter 0.9s 0.22s cubic-bezier(0.16,1,0.3,1) both' }}>
-            Unite a la comunidad. Elegí tu camino — estudiante o instructor.
+            Unite a la comunidad y empezá a aprender hoy mismo.
           </p>
 
           <div className="mt-10 space-y-0">
@@ -145,74 +164,102 @@ export const RegisterPage: React.FC = () => {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <form onSubmit={handleSubmit(onSubmit)} noValidate style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div style={{ animation: 'loginEnter 0.9s 0.10s cubic-bezier(0.16,1,0.3,1) both' }}>
               <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>Nombre completo</label>
-              <input type="text" required value={nombre} onChange={e => setNombre(e.target.value)}
-                     placeholder="Tu nombre" style={inputStyle} onFocus={onFocus} onBlur={onBlur} />
+              <input
+                type="text"
+                placeholder="Tu nombre"
+                style={getInputStyle(!!errors.nombre)}
+                {...nombreField}
+                onFocus={e => {
+                  e.target.style.borderColor = errors.nombre ? '#dc2626' : 'var(--text-primary)';
+                  e.target.style.boxShadow = '0 0 0 3px rgba(28,26,22,0.08)';
+                }}
+                onBlur={e => {
+                  nombreField.onBlur(e);
+                  e.target.style.borderColor = errors.nombre ? '#dc2626' : 'var(--border)';
+                  e.target.style.boxShadow = 'none';
+                }}
+              />
+              {errors.nombre && (
+                <p className="mt-1.5 text-xs" style={{ color: '#dc2626' }}>
+                  {errors.nombre.message}
+                </p>
+              )}
             </div>
 
             <div style={{ animation: 'loginEnter 0.9s 0.20s cubic-bezier(0.16,1,0.3,1) both' }}>
               <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>Email</label>
-              <input type="email" required value={email} onChange={e => setEmail(e.target.value)}
-                     placeholder="tu@correo.com" style={inputStyle} onFocus={onFocus} onBlur={onBlur} />
+              <input
+                type="email"
+                placeholder="tu@correo.com"
+                style={getInputStyle(!!errors.email)}
+                {...emailField}
+                onFocus={e => {
+                  e.target.style.borderColor = errors.email ? '#dc2626' : 'var(--text-primary)';
+                  e.target.style.boxShadow = '0 0 0 3px rgba(28,26,22,0.08)';
+                }}
+                onBlur={e => {
+                  emailField.onBlur(e);
+                  e.target.style.borderColor = errors.email ? '#dc2626' : 'var(--border)';
+                  e.target.style.boxShadow = 'none';
+                }}
+              />
+              {errors.email && (
+                <p className="mt-1.5 text-xs" style={{ color: '#dc2626' }}>
+                  {errors.email.message}
+                </p>
+              )}
             </div>
 
             <div style={{ animation: 'loginEnter 0.9s 0.30s cubic-bezier(0.16,1,0.3,1) both' }}>
               <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>Contraseña</label>
-              <input type="password" required minLength={6} value={password} onChange={e => setPassword(e.target.value)}
-                     placeholder="Mínimo 6 caracteres" style={inputStyle} onFocus={onFocus} onBlur={onBlur} />
-            </div>
-
-            <div style={{ animation: 'loginEnter 0.9s 0.40s cubic-bezier(0.16,1,0.3,1) both' }}>
-              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-primary)' }}>Tipo de cuenta</label>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                {(['student', 'instructor'] as const).map((r) => (
-                  <button
-                    key={r}
-                    type="button"
-                    onClick={() => setRol(r)}
-                    style={{
-                      padding: '12px',
-                      borderRadius: '10px',
-                      fontSize: '14px',
-                      fontWeight: 500,
-                      border: rol === r ? '2px solid var(--text-primary)' : '1px solid var(--border)',
-                      background: rol === r ? 'var(--accent)' : 'var(--bg-card)',
-                      color: rol === r ? 'var(--accent-fg)' : 'var(--text-muted)',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                    }}
-                  >
-                    {r === 'student' ? '🎓 Estudiante' : '👨‍🏫 Instructor'}
-                  </button>
-                ))}
-              </div>
+              <input
+                type="password"
+                placeholder="Mínimo 6 caracteres"
+                style={getInputStyle(!!errors.password)}
+                {...passwordField}
+                onFocus={e => {
+                  e.target.style.borderColor = errors.password ? '#dc2626' : 'var(--text-primary)';
+                  e.target.style.boxShadow = '0 0 0 3px rgba(28,26,22,0.08)';
+                }}
+                onBlur={e => {
+                  passwordField.onBlur(e);
+                  e.target.style.borderColor = errors.password ? '#dc2626' : 'var(--border)';
+                  e.target.style.boxShadow = 'none';
+                }}
+              />
+              {errors.password && (
+                <p className="mt-1.5 text-xs" style={{ color: '#dc2626' }}>
+                  {errors.password.message}
+                </p>
+              )}
             </div>
 
             <div style={{ animation: 'loginEnter 0.9s 0.50s cubic-bezier(0.16,1,0.3,1) both' }}>
               <button
                 type="submit"
-                disabled={submitting}
+                disabled={isSubmitting}
                 style={{
                   width: '100%',
-                  background: submitting ? 'rgba(28,26,22,0.6)' : 'var(--accent)',
+                  background: isSubmitting ? 'rgba(28,26,22,0.6)' : 'var(--accent)',
                   color: 'var(--accent-fg)',
                   border: 'none',
                   borderRadius: '10px',
                   padding: '13px',
                   fontSize: '14px',
                   fontWeight: 600,
-                  cursor: submitting ? 'not-allowed' : 'pointer',
+                  cursor: isSubmitting ? 'not-allowed' : 'pointer',
                   transition: 'opacity 0.15s, transform 0.15s',
                   letterSpacing: '-0.01em',
                 }}
-                onMouseEnter={e => { if (!submitting) (e.target as HTMLButtonElement).style.opacity = '0.85'; }}
+                onMouseEnter={e => { if (!isSubmitting) (e.target as HTMLButtonElement).style.opacity = '0.85'; }}
                 onMouseLeave={e => { (e.target as HTMLButtonElement).style.opacity = '1'; }}
-                onMouseDown={e => { if (!submitting) (e.target as HTMLButtonElement).style.transform = 'scale(0.99)'; }}
+                onMouseDown={e => { if (!isSubmitting) (e.target as HTMLButtonElement).style.transform = 'scale(0.99)'; }}
                 onMouseUp={e => { (e.target as HTMLButtonElement).style.transform = 'scale(1)'; }}
               >
-                {submitting ? 'Registrando...' : 'Crear cuenta gratis'}
+                {isSubmitting ? 'Registrando...' : 'Crear cuenta gratis'}
               </button>
             </div>
           </form>

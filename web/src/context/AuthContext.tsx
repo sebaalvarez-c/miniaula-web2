@@ -13,7 +13,7 @@ interface AuthContextType {
   token: string | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (nombre: string, email: string, password: string, rol: string) => Promise<void>;
+  register: (nombre: string, email: string, password: string) => Promise<void>;
   logout: () => void;
   updateUser: (updated: Partial<AuthUser>) => void;
 }
@@ -52,14 +52,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [saveSession]);
 
-  const register = useCallback(async (nombre: string, email: string, password: string, rol: string) => {
+  const register = useCallback(async (nombre: string, email: string, password: string) => {
     setLoading(true);
     try {
-      await authService.register({ nombre, email, password, rol });
+      const data = await authService.register({ nombre, email, password });
+      saveSession(data);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [saveSession]);
 
   const logout = useCallback(() => {
     localStorage.removeItem('token');

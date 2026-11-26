@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getPreguntas, submitIntento } from '../../services/lecciones.service';
+import { getProgresoCurso } from '../../services/cursos.service';
 import { getApiError } from '../../lib/api-error';
-import type { Pregunta, ResultadoIntento } from '../../types';
+import type { Pregunta, ProgresoData, ResultadoIntento } from '../../types';
 
 export const QuizPage: React.FC = () => {
   const { cursoId, leccionId } = useParams<{ cursoId: string; leccionId: string }>();
@@ -12,6 +13,7 @@ export const QuizPage: React.FC = () => {
   const [resultado, setResultado] = useState<ResultadoIntento | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [continuing, setContinuing] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -42,6 +44,19 @@ export const QuizPage: React.FC = () => {
     } catch (err: unknown) {
       setError(getApiError(err, 'Error al enviar el cuestionario'));
     } finally { setSubmitting(false); }
+  };
+
+  const handleContinuar = async () => {
+    if (!cursoId || !leccionId) return;
+    setContinuing(true);
+    try {
+      const p: ProgresoData = await getProgresoCurso(cursoId);
+      const idx = p.lecciones.findIndex((l) => l.leccionId === leccionId);
+      const next = p.lecciones[idx + 1];
+      navigate(next ? `/cursos/${cursoId}/lecciones/${next.leccionId}` : '/mis-cursos');
+    } catch (err: unknown) {
+      setError(getApiError(err, 'Error al cargar el progreso'));
+    } finally { setContinuing(false); }
   };
 
   if (loading) {
@@ -93,6 +108,16 @@ export const QuizPage: React.FC = () => {
                   ? '¡Aprobado! Excelente trabajo.'
                   : `No alcanzaste el ${resultado.notaMinima}%.${resultado.intentosRestantes > 0 ? ` Te quedan ${resultado.intentosRestantes} intento${resultado.intentosRestantes > 1 ? 's' : ''}.` : ' Agotaste los intentos.'}`}
               </p>
+              {resultado.aprobado && (
+                <button
+                  type="button"
+                  onClick={handleContinuar}
+                  disabled={continuing}
+                  className="mt-4 gradient-brand text-white font-semibold px-5 py-2 rounded-xl hover:opacity-90 disabled:opacity-50 transition-all"
+                >
+                  {continuing ? 'Cargando...' : 'Continuar →'}
+                </button>
+              )}
             </div>
           )}
 
@@ -139,9 +164,10 @@ export const QuizPage: React.FC = () => {
                   {submitting ? 'Evaluando...' : 'Enviar respuestas'}
                 </button>
               ) : (
-                <button type="button" onClick={() => { setResultado(null); setSeleccionadas({}); }}
-                  className="w-full bg-surface border-2 border-theme text-primary font-semibold py-3 rounded-xl hover:border-brand-400 transition-all">
-                  Reintentar cuestionario
+                <button type="button" disabled={resultado.intentosRestantes <= 0}
+                  onClick={() => { setResultado(null); setSeleccionadas({}); }}
+                  className="w-full bg-surface border-2 border-theme text-primary font-semibold py-3 rounded-xl hover:border-brand-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
+                  {resultado.intentosRestantes > 0 ? 'Reintentar cuestionario' : 'Intentos agotados'}
                 </button>
               )}
             </form>

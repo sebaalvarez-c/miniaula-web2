@@ -1,8 +1,9 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, JoinColumn, Unique } from 'typeorm';
 import { Curso } from '../../cursos/entities/curso.entity';
 import { Pregunta } from '../../cuestionarios/entities/pregunta.entity';
 
 @Entity('lecciones')
+@Unique(['cursoId', 'orden'])
 export class Leccion {
   @PrimaryGeneratedColumn('uuid')
   id: string;

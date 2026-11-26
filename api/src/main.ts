@@ -12,7 +12,7 @@ async function bootstrap() {
 
   app.use(helmet());
   app.use(morgan('dev'));
-  app.enableCors({ origin: process.env.CORS_ORIGIN || process.env.FRONTEND_URL || '*' });
+  app.enableCors({ origin: process.env.CORS_ORIGIN || process.env.FRONTEND_URL || 'http://localhost' });
   app.setGlobalPrefix('api');
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   app.useGlobalFilters(new HttpExceptionFilter());

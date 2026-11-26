@@ -3,25 +3,22 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Pregunta } from './entities/pregunta.entity';
 import { Leccion } from '../lecciones/entities/leccion.entity';
-import { Inscripcion } from '../inscripciones/entities/inscripcion.entity';
 import { Progreso } from '../inscripciones/entities/progreso.entity';
 import { ApiException } from '../common/exceptions/api.exception';
+import { LeccionesService } from '../lecciones/lecciones.service';
+import { CreatePreguntaDto } from './dto/create-pregunta.dto';
 
 @Injectable()
 export class CuestionariosService {
   constructor(
     @InjectRepository(Pregunta) private preguntaRepo: Repository<Pregunta>,
     @InjectRepository(Leccion) private leccionRepo: Repository<Leccion>,
-    @InjectRepository(Inscripcion) private inscripcionRepo: Repository<Inscripcion>,
     @InjectRepository(Progreso) private progresoRepo: Repository<Progreso>,
+    private leccionesService: LeccionesService,
   ) {}
 
   async getPreguntas(leccionId: string, userId: string) {
-    const leccion = await this.leccionRepo.findOne({ where: { id: leccionId } });
-    if (!leccion) throw new ApiException(404, 'NOT_FOUND', 'Lesson not found');
-
-    const inscripcion = await this.inscripcionRepo.findOne({ where: { estudianteId: userId, cursoId: leccion.cursoId } });
-    if (!inscripcion) throw new ApiException(403, 'NOT_ENROLLED', 'Not enrolled in this course');
+    await this.leccionesService.verificarAccesoLeccion(leccionId, userId);
 
     const preguntas = await this.preguntaRepo.find({ where: { leccionId } });
     return preguntas.map(({ indiceCorrecto, ...p }) => p);
@@ -35,6 +32,22 @@ export class CuestionariosService {
     return this.preguntaRepo.save(this.preguntaRepo.create({ ...data, leccionId }));
   }
 
+  async updatePregunta(preguntaId: string, instructorId: string, data: CreatePreguntaDto) {
+    const pregunta = await this.preguntaRepo.findOne({
+      where: { id: preguntaId },
+      relations: ['leccion', 'leccion.curso'],
+    });
+    if (!pregunta) throw new ApiException(404, 'NOT_FOUND', 'Question not found');
+    if (pregunta.leccion?.curso?.instructorId !== instructorId) {
+      throw new ApiException(403, 'FORBIDDEN', 'Not your course');
+    }
+    if (data.indiceCorrecto >= data.opciones.length) {
+      throw new ApiException(422, 'INVALID_INDEX', 'Correct answer index is out of range');
+    }
+    Object.assign(pregunta, data);
+    return this.preguntaRepo.save(pregunta);
+  }
+
   async deletePregunta(preguntaId: string, instructorId: string) {
     const pregunta = await this.preguntaRepo.findOne({ where: { id: preguntaId }, relations: ['leccion', 'leccion.curso'] });
     if (!pregunta) throw new ApiException(404, 'NOT_FOUND', 'Question not found');
@@ -44,12 +57,8 @@ export class CuestionariosService {
 
   // RN-02 and RN-03
   async submitIntento(leccionId: string, userId: string, respuestas: number[]) {
-    const leccion = await this.leccionRepo.findOne({ where: { id: leccionId } });
-    if (!leccion) throw new ApiException(404, 'NOT_FOUND', 'Lesson not found');
+    const { leccion, inscripcion } = await this.leccionesService.verificarAccesoLeccion(leccionId, userId);
     if (leccion.tipo !== 'cuestionario') throw new ApiException(422, 'WRONG_TYPE', 'This lesson is not a quiz');
-
-    const inscripcion = await this.inscripcionRepo.findOne({ where: { estudianteId: userId, cursoId: leccion.cursoId } });
-    if (!inscripcion) throw new ApiException(403, 'NOT_ENROLLED', 'Not enrolled in this course');
 
     let progreso = await this.progresoRepo.findOne({ where: { inscripcionId: inscripcion.id, leccionId } });
     if (!progreso) {

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Inscripcion } from './entities/inscripcion.entity';
 import { Progreso } from './entities/progreso.entity';
 import { Curso } from '../cursos/entities/curso.entity';
@@ -37,8 +37,14 @@ export class InscripcionesService {
 
     const result = await Promise.all(
       inscripciones.map(async (insc) => {
-        const totalLecciones = await this.leccionRepo.count({ where: { cursoId: insc.cursoId } });
-        const completadas = await this.progresoRepo.count({ where: { inscripcionId: insc.id, completada: true } });
+        const lecciones = await this.leccionRepo.find({ where: { cursoId: insc.cursoId }, select: { id: true } });
+        const idsLecciones = lecciones.map((l) => l.id);
+        const totalLecciones = idsLecciones.length;
+        const completadas = totalLecciones > 0
+          ? await this.progresoRepo.count({
+              where: { inscripcionId: insc.id, completada: true, leccionId: In(idsLecciones) },
+            })
+          : 0;
         const porcentaje = totalLecciones > 0 ? Math.round((completadas / totalLecciones) * 100) : 0;
 
         const instructor = insc.curso?.instructorId

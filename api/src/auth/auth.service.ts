@@ -19,7 +19,12 @@ export class AuthService {
     if (existing) throw new ApiException(409, 'EMAIL_TAKEN', 'Email already registered');
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
-    const user = await this.usersService.create({ ...dto, passwordHash });
+    const user = await this.usersService.create({
+      nombre: dto.nombre,
+      email: dto.email,
+      passwordHash,
+      rol: 'estudiante',
+    });
     const token = this.signToken(user);
     return { token, user: this.usersService.toPublic(user) };
   }

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { getLeccion, updateLeccion } from '../../services/lecciones.service.js';
+import { getMisCursos } from '../../services/cursos.service.js';
+import { updateLeccion } from '../../services/lecciones.service.js';
 import { createPregunta } from '../../services/preguntas.service.js';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { ErrorMessage } from '../../components/ErrorMessage';
@@ -35,7 +36,7 @@ export function LessonEditorPage() {
 
   useEffect(() => {
     setLoading(true);
-    import('../../services/cursos.service.js').then(({ getMisCursos }) => getMisCursos()).then((cursos: Curso[]) => {
+    getMisCursos().then((cursos: Curso[]) => {
       for (const c of cursos) {
         const found = c.lecciones?.find((l) => l.id === id);
         if (found) {

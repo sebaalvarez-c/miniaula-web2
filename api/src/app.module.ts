@@ -1,7 +1,8 @@
 import { Module, OnApplicationBootstrap } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { CursosModule } from './cursos/cursos.module';
@@ -30,7 +31,7 @@ import { Progreso } from './inscripciones/entities/progreso.entity';
         password: config.get('DB_PASSWORD', 'postgres123'),
         database: config.get('DB_NAME', 'miniaula'),
         entities: [User, Curso, Leccion, Pregunta, Inscripcion, Progreso],
-        synchronize: true,
+        synchronize: config.get<string>('DB_SYNCHRONIZE') === 'true' || config.get('NODE_ENV') !== 'production',
       }),
       inject: [ConfigService],
     }),
@@ -41,9 +42,10 @@ import { Progreso } from './inscripciones/entities/progreso.entity';
     LeccionesModule,
     CuestionariosModule,
     InscripcionesModule,
-    DatabaseModule,
-  ],
-})
+      DatabaseModule,
+    ],
+    providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
+  })
 export class AppModule implements OnApplicationBootstrap {
   constructor(private readonly seedService: SeedService) {}
 

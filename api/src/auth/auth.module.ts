@@ -6,6 +6,7 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { UsersModule } from '../users/users.module';
+import { getJwtSecret } from '../config/jwt-secret';
 
 @Module({
   imports: [
@@ -14,7 +15,7 @@ import { UsersModule } from '../users/users.module';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (config: ConfigService) => ({
-        secret: config.get<string>('JWT_SECRET', 'miniaula_jwt_secret_2024'),
+        secret: getJwtSecret(config),
         signOptions: { expiresIn: config.get('JWT_EXPIRES_IN', '7d') },
       }),
       inject: [ConfigService],
