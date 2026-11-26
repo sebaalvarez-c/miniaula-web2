@@ -1,6 +1,7 @@
 import api from './api.js';
 
 export const getLeccion = (id) => api.get(`/lecciones/${id}`).then((r) => r.data);
+export const getPreguntas = (leccionId) => api.get(`/lecciones/${leccionId}/preguntas`).then((r) => r.data);
 export const createLeccion = (cursoId, data) => api.post(`/instructor/cursos/${cursoId}/lecciones`, data).then((r) => r.data);
 export const updateLeccion = (id, data) => api.patch(`/instructor/lecciones/${id}`, data).then((r) => r.data);
 export const deleteLeccion = (id) => api.delete(`/instructor/lecciones/${id}`);

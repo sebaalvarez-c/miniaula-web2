@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth.js';
 import { Navbar } from './components/Navbar';
 import { ProtectedRoute, RoleRoute } from './components/ProtectedRoute';
@@ -25,10 +25,15 @@ function HomeRedirect() {
   return <Navigate to="/catalogo" replace />;
 }
 
+const NO_NAVBAR_ROUTES = ['/login', '/register'];
+
 export default function App() {
+  const location = useLocation();
+  const showNavbar = !NO_NAVBAR_ROUTES.includes(location.pathname);
+
   return (
-    <div className="min-h-screen">
-      <Navbar />
+    <div className="min-h-screen bg-page">
+      {showNavbar && <Navbar />}
       <Routes>
         {/* Public */}
         <Route path="/" element={<HomeRedirect />} />
