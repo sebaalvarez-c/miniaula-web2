@@ -82,6 +82,9 @@ export function InstructorMisCursosPage() {
                 {c.estado === 'publicado' && (
                   <button onClick={() => handlePublish(c.id, 'archivado')} className="text-sm bg-yellow-500 text-white px-3 py-1 rounded-lg hover:bg-yellow-600 transition-colors">Archivar</button>
                 )}
+                {c.estado === 'archivado' && (
+                  <button onClick={() => handlePublish(c.id, 'publicado')} className="text-sm bg-green-600 text-white px-3 py-1 rounded-lg hover:bg-green-700 transition-colors">Publicar</button>
+                )}
                 {c.estado === 'borrador' && (
                   <button onClick={() => handleDelete(c.id)} className="text-sm text-red-500 border border-red-300 dark:border-red-800 px-3 py-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">Eliminar</button>
                 )}
